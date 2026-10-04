@@ -1,0 +1,49 @@
+amends "package://github.com/jdx/hk/releases/download/v2.4.0/hk@2.4.0#/Config.pkl"
+
+min_hk_version = "2.4.0"
+
+local rustInputs = List(
+  "**/*.rs", "Cargo.toml", "Cargo.lock", ".cargo/**",
+  "rustfmt.toml", ".rustfmt.toml", "clippy.toml", ".clippy.toml",
+  "rust-toolchain*", "mise.toml", "hk.pkl"
+)
+
+local rustTests = new Step {
+  // Frozen samples are test inputs even when no Rust source changed.
+  glob = rustInputs + List("tests/fixtures/**")
+  check = """
+    cargo test --locked &&
+    cargo test --features serde --locked
+    """
+}
+
+steps {
+  ["cargo-fmt"] {
+    glob = rustInputs
+    check = "cargo fmt --all --check"
+    fix = "cargo fmt --all"
+  }
+  ["cargo-clippy"] {
+    glob = rustInputs
+    depends = "cargo-fmt"
+    check = "cargo clippy --all-targets --all-features --locked -- -D warnings"
+  }
+  ["cargo-test"] = (rustTests) {
+    profiles = List("slow")
+    depends = "cargo-clippy"
+  }
+}
+
+hooks {
+  ["pre-commit"] {
+    // Check the staged snapshot; formatting is an explicit `hk fix` action.
+    fix = false
+    stage = false
+    stash = "git"
+  }
+  ["pre-push"] {
+    steps {
+      ["cargo-test"] = rustTests
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "member_order": "ascending_domain_index",
+  "serde_model": "unit_variant",
+  "SixClash": [
+    {"index": 0, "code": "ZiWu", "members": ["Zi", "Wu"]},
+    {"index": 1, "code": "ChouWei", "members": ["Chou", "Wei"]},
+    {"index": 2, "code": "YinShen", "members": ["Yin", "Shen"]},
+    {"index": 3, "code": "MaoYou", "members": ["Mao", "You"]},
+    {"index": 4, "code": "ChenXu", "members": ["Chen", "Xu"]},
+    {"index": 5, "code": "SiHai", "members": ["Si", "Hai"]}
+  ],
+  "SixHarm": [
+    {"index": 0, "code": "ZiWei", "members": ["Zi", "Wei"]},
+    {"index": 1, "code": "ChouWu", "members": ["Chou", "Wu"]},
+    {"index": 2, "code": "YinSi", "members": ["Yin", "Si"]},
+    {"index": 3, "code": "MaoChen", "members": ["Mao", "Chen"]},
+    {"index": 4, "code": "ShenHai", "members": ["Shen", "Hai"]},
+    {"index": 5, "code": "YouXu", "members": ["You", "Xu"]}
+  ],
+  "SixBreak": [
+    {"index": 0, "code": "ZiYou", "members": ["Zi", "You"]},
+    {"index": 1, "code": "ChouChen", "members": ["Chou", "Chen"]},
+    {"index": 2, "code": "YinHai", "members": ["Yin", "Hai"]},
+    {"index": 3, "code": "MaoWu", "members": ["Mao", "Wu"]},
+    {"index": 4, "code": "SiShen", "members": ["Si", "Shen"]},
+    {"index": 5, "code": "WeiXu", "members": ["Wei", "Xu"]}
+  ],
+  "invalid_json": [null, 0, 255, [], {}, "", "unknown", "子午", "子未", "子酉"]
+}

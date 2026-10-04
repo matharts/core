@@ -1,0 +1,21 @@
+{
+  "schema_version": 2,
+  "Primitive": ["Yang", "Yin"],
+  "Element": ["Wood", "Fire", "Earth", "Metal", "Water"],
+  "ElementRelation": ["Same", "Generates", "Overcomes", "OvercomeBy", "GeneratedBy"],
+  "Stem": ["Jia", "Yi", "Bing", "Ding", "Wu", "Ji", "Geng", "Xin", "Ren", "Gui"],
+  "Branch": ["Zi", "Chou", "Yin", "Mao", "Chen", "Si", "Wu", "Wei", "Shen", "You", "Xu", "Hai"],
+  "God": ["BiJian", "JieCai", "ShiShen", "ShangGuan", "PianCai", "ZhengCai", "QiSha", "ZhengGuan", "PianYin", "ZhengYin"],
+  "Growth": ["ChangSheng", "MuYu", "GuanDai", "LinGuan", "DiWang", "Shuai", "Bing", "Si", "Mu", "Jue", "Tai", "Yang"],
+  "HiddenStems": {"primary":"Ji","secondary":"Gui","tertiary":"Xin"},
+  "HiddenStemsSingle": {"primary":"Gui","secondary":null,"tertiary":null},
+  "Ganzhi": [
+    ["Jia","Zi"],["Yi","Chou"],["Bing","Yin"],["Ding","Mao"],["Wu","Chen"],["Ji","Si"],["Geng","Wu"],["Xin","Wei"],["Ren","Shen"],["Gui","You"],
+    ["Jia","Xu"],["Yi","Hai"],["Bing","Zi"],["Ding","Chou"],["Wu","Yin"],["Ji","Mao"],["Geng","Chen"],["Xin","Si"],["Ren","Wu"],["Gui","Wei"],
+    ["Jia","Shen"],["Yi","You"],["Bing","Xu"],["Ding","Hai"],["Wu","Zi"],["Ji","Chou"],["Geng","Yin"],["Xin","Mao"],["Ren","Chen"],["Gui","Si"],
+    ["Jia","Wu"],["Yi","Wei"],["Bing","Shen"],["Ding","You"],["Wu","Xu"],["Ji","Hai"],["Geng","Zi"],["Xin","Chou"],["Ren","Yin"],["Gui","Mao"],
+    ["Jia","Chen"],["Yi","Si"],["Bing","Wu"],["Ding","Wei"],["Wu","Shen"],["Ji","You"],["Geng","Xu"],["Xin","Hai"],["Ren","Zi"],["Gui","Chou"],
+    ["Jia","Yin"],["Yi","Mao"],["Bing","Chen"],["Ding","Si"],["Wu","Wu"],["Ji","Wei"],["Geng","Shen"],["Xin","You"],["Ren","Xu"],["Gui","Hai"]
+  ],
+  "invalid_ganzhi": [{"stem":"Jia","branch":"Chou"},{"stem":"Unknown","branch":"Zi"},{"stem":0,"branch":0},{"stem":"Jia"}]
+}

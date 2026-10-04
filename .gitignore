@@ -141,3 +141,13 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+
+# Added by cargo
+
+/target
+
+# Local agent indexes and macOS metadata
+/.codegraph/
+/.serena/
+.DS_Store

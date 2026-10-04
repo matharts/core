@@ -1,0 +1,272 @@
+//! 严格构造、周期运算、固定属性及当前入口的公共契约。
+use core::num::NonZeroU8;
+use matharts_core::{
+    Branch, CyclicRing, Element, ElementRelation, Growth, Primitive, SexagenaryCycle, Stem,
+    checked_forward_distance, forward_distance,
+};
+use proptest::prelude::*;
+
+const STEMS: [Stem; 10] = [
+    Stem::Jia,
+    Stem::Yi,
+    Stem::Bing,
+    Stem::Ding,
+    Stem::Wu,
+    Stem::Ji,
+    Stem::Geng,
+    Stem::Xin,
+    Stem::Ren,
+    Stem::Gui,
+];
+const BRANCHES: [Branch; 12] = [
+    Branch::Zi,
+    Branch::Chou,
+    Branch::Yin,
+    Branch::Mao,
+    Branch::Chen,
+    Branch::Si,
+    Branch::Wu,
+    Branch::Wei,
+    Branch::Shen,
+    Branch::You,
+    Branch::Xu,
+    Branch::Hai,
+];
+
+fn check_cycle_boundary<T: CyclicRing + TryFrom<u8>>() {
+    for index in 0..=u8::MAX {
+        assert_eq!(T::try_from(index).is_ok(), index < T::MODULUS.get());
+        assert_eq!(T::try_from_index(index).is_ok(), index < T::MODULUS.get());
+        assert_eq!(T::from_index(index).index(), index % T::MODULUS.get());
+    }
+}
+
+#[test]
+fn strict_and_wrapping_construction_are_distinct() {
+    check_cycle_boundary::<Stem>();
+    check_cycle_boundary::<Branch>();
+    check_cycle_boundary::<Growth>();
+    check_cycle_boundary::<SexagenaryCycle>();
+    for index in 0..=u8::MAX {
+        assert_eq!(Element::try_from(index).is_ok(), index < 5);
+        assert_eq!(Element::from_index(index).index(), index % 5);
+    }
+}
+
+#[test]
+fn zero_period_is_rejected_and_distance_is_directed() {
+    assert_eq!(checked_forward_distance(0, 1, 0), None);
+    assert_eq!(checked_forward_distance(11, 0, 12), Some(1));
+    assert_eq!(forward_distance(0, 11, NonZeroU8::new(12).unwrap()), 11);
+    assert_eq!(checked_forward_distance(255, 0, 12), Some(9));
+    assert_eq!(checked_forward_distance(0, 255, 1), Some(0));
+}
+
+#[test]
+fn primitive_and_elements_match_fixed_attributes() {
+    use Element::{Earth, Fire, Metal, Water, Wood};
+    let stems = [
+        Wood, Wood, Fire, Fire, Earth, Earth, Metal, Metal, Water, Water,
+    ];
+    let branches = [
+        Water, Earth, Wood, Wood, Earth, Fire, Fire, Earth, Metal, Metal, Earth, Water,
+    ];
+    for (index, expected) in (0_u8..10).zip(stems) {
+        assert_eq!(Stem::try_from(index).unwrap().element(), expected);
+        assert_eq!(
+            Stem::try_from(index).unwrap().primitive().is_yang(),
+            index.is_multiple_of(2)
+        );
+    }
+    for (index, expected) in (0_u8..12).zip(branches) {
+        assert_eq!(Branch::try_from(index).unwrap().element(), expected);
+        assert_eq!(
+            Branch::try_from(index).unwrap().primitive().is_yang(),
+            index.is_multiple_of(2)
+        );
+    }
+    assert_eq!(Primitive::Yang.invert(), Primitive::Yin);
+    assert_eq!(Primitive::Yin.invert(), Primitive::Yang);
+    assert!(!Primitive::Yang.is_yin());
+    assert!(Primitive::Yin.is_yin());
+}
+
+#[test]
+fn all_element_relations_have_the_documented_direction() {
+    use ElementRelation::{
+        GeneratedBy as B, Generates as G, OvercomeBy as O, Overcomes as K, Same as S,
+    };
+    let expected = [
+        [S, G, K, O, B],
+        [B, S, G, K, O],
+        [O, B, S, G, K],
+        [K, O, B, S, G],
+        [G, K, O, B, S],
+    ];
+    for (i, row) in (0_u8..5).zip(expected) {
+        for (j, relation) in (0_u8..5).zip(row) {
+            assert_eq!(
+                Element::try_from(i)
+                    .unwrap()
+                    .relation_to(Element::try_from(j).unwrap()),
+                relation
+            );
+        }
+    }
+}
+
+#[test]
+fn element_convenience_methods_match_fixed_relations() {
+    use Element::{Earth, Fire, Metal, Water, Wood};
+    // 每行依次为自身、生我、我生、克我、我克，不以 relation_to 生成预期。
+    let cases: [(Element, Element, Element, Element, Element); 5] = [
+        (Wood, Water, Fire, Metal, Earth),
+        (Fire, Wood, Earth, Water, Metal),
+        (Earth, Fire, Metal, Wood, Water),
+        (Metal, Earth, Water, Fire, Wood),
+        (Water, Metal, Wood, Earth, Fire),
+    ];
+    for (element, generated_by, generates, overcome_by, overcomes) in cases {
+        assert_eq!(element.generated_by(), generated_by, "{element:?}");
+        assert_eq!(element.generates(), generates, "{element:?}");
+        assert_eq!(element.overcome_by(), overcome_by, "{element:?}");
+        assert_eq!(element.overcomes(), overcomes, "{element:?}");
+    }
+}
+
+#[test]
+fn stem_combinations_and_clashes_match_fixed_pairs() {
+    use Stem::{Bing, Ding, Geng, Gui, Ji, Jia, Ren, Wu, Xin, Yi};
+    let combinations: [Stem; 10] = [Ji, Geng, Xin, Ren, Gui, Jia, Yi, Bing, Ding, Wu];
+    let clashes: [(Stem, Stem); 4] = [(Jia, Geng), (Yi, Xin), (Bing, Ren), (Ding, Gui)];
+    for (stem, expected) in STEMS.into_iter().zip(combinations) {
+        assert_eq!(
+            stem.five_combination().partner_of(stem),
+            Some(expected),
+            "{stem:?}"
+        );
+        for target in STEMS {
+            let expected = clashes.contains(&(stem, target)) || clashes.contains(&(target, stem));
+            assert_eq!(
+                stem.is_clashing_with(target),
+                expected,
+                "{stem:?}, {target:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn branch_opposites_match_fixed_pairs() {
+    use Branch::{Chen, Chou, Hai, Mao, Shen, Si, Wei, Wu, Xu, Yin, You, Zi};
+    let opposites: [Branch; 12] = [Wu, Wei, Shen, You, Xu, Hai, Zi, Chou, Yin, Mao, Chen, Si];
+    for (branch, opposite) in BRANCHES.into_iter().zip(opposites) {
+        assert_eq!(branch.opposite(), opposite, "{branch:?}");
+    }
+}
+
+#[test]
+fn addition_handles_signed_extremes_and_wraps_in_both_directions() {
+    let deltas = [
+        i32::MIN,
+        i32::MIN + 1,
+        -121,
+        -12,
+        -10,
+        -1,
+        0,
+        1,
+        10,
+        12,
+        121,
+        i32::MAX - 1,
+        i32::MAX,
+    ];
+    for delta in deltas {
+        for (index, stem) in (0_u8..10).zip(STEMS) {
+            let expected_index = (i64::from(index) + i64::from(delta)).rem_euclid(10);
+            let expected = STEMS[usize::try_from(expected_index).unwrap()];
+            assert_eq!(stem + delta, expected, "{stem:?} + {delta}");
+        }
+        for (index, branch) in (0_u8..12).zip(BRANCHES) {
+            let expected_index = (i64::from(index) + i64::from(delta)).rem_euclid(12);
+            let expected = BRANCHES[usize::try_from(expected_index).unwrap()];
+            assert_eq!(branch + delta, expected, "{branch:?} + {delta}");
+        }
+    }
+}
+
+#[test]
+fn subtraction_measures_forward_distance_from_rhs_for_every_pair() {
+    for (left_index, left) in (0_u8..10).zip(STEMS) {
+        for (right_index, right) in (0_u8..10).zip(STEMS) {
+            let expected = (i16::from(left_index) - i16::from(right_index)).rem_euclid(10);
+            assert_eq!(i16::from(left - right), expected, "{left:?} - {right:?}");
+        }
+    }
+    for (left_index, left) in (0_u8..12).zip(BRANCHES) {
+        for (right_index, right) in (0_u8..12).zip(BRANCHES) {
+            let expected = (i16::from(left_index) - i16::from(right_index)).rem_euclid(12);
+            assert_eq!(i16::from(left - right), expected, "{left:?} - {right:?}");
+        }
+    }
+}
+
+#[test]
+fn all_sixty_values_have_consistent_xun_membership() {
+    use Branch::{Chen, Chou, Hai, Mao, Shen, Si, Wei, Wu, Xu, Yin, You, Zi};
+    let leaders = [Zi, Xu, Shen, Wu, Chen, Yin];
+    let missing = [
+        (Xu, Hai),
+        (Shen, You),
+        (Wu, Wei),
+        (Chen, Si),
+        (Yin, Mao),
+        (Zi, Chou),
+    ];
+    for index in 0_u8..60 {
+        let value = SexagenaryCycle::try_from(index).unwrap();
+        let xun = usize::from(index / 10);
+        assert_eq!(value.xun().leader().branch(), leaders[xun]);
+        assert_eq!(value.xun().void_branches(), missing[xun]);
+        for b in 0_u8..12 {
+            let branch = Branch::try_from(b).unwrap();
+            assert_eq!(
+                value.xun().is_void_branch(branch),
+                branch == missing[xun].0 || branch == missing[xun].1
+            );
+        }
+    }
+}
+
+proptest! {
+    #[test]
+    fn arbitrary_signed_offsets_match_wide_integer_math(index in 0_u8..60, delta in any::<i32>()) {
+        let actual = SexagenaryCycle::try_from(index).unwrap().offset(delta);
+        let expected = (i64::from(index) + i64::from(delta)).rem_euclid(60);
+        prop_assert_eq!(i64::from(actual.index()), expected);
+    }
+}
+
+#[test]
+fn custom_cycle_uses_nonzero_period_and_strict_indices() {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    struct Weekday(u8);
+
+    impl CyclicRing for Weekday {
+        const MODULUS: NonZeroU8 = NonZeroU8::new(7).unwrap();
+        fn from_index(idx: u8) -> Self {
+            Self(idx % Self::MODULUS.get())
+        }
+        fn index(self) -> u8 {
+            self.0
+        }
+    }
+
+    assert_eq!(Weekday::from_index(8), Weekday(1));
+    assert_eq!(Weekday(6).offset(i32::MAX), Weekday(0));
+    assert_eq!(Weekday(0).offset(i32::MIN), Weekday(5));
+    assert_eq!(Weekday(6).distance_to(Weekday(1)), 2);
+    assert_eq!(Weekday::try_from_index(6).unwrap(), Weekday(6));
+    assert!(Weekday::try_from_index(7).is_err());
+}

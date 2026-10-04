@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">MathArts Core — 阴阳、五行、干支的共享基础</title>
+  <desc id="desc">十天干与十二地支同步步进，六十步回到甲子。外环六十个刻度表示六十甲子周期，朱红刻度标记甲子起点。</desc>
+  <!-- Palette: paper #F4F0E7; ink #242B28; cinnabar #AC432F; muted #666D64. -->
+  <!-- The 60 ticks use a normalized path length: one unit per cycle position. -->
+  <rect width="1200" height="360" rx="16" fill="#F4F0E7"/>
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif">
+    <path d="M56 43H82" stroke="#AC432F" stroke-width="4"/>
+    <text x="96" y="50" fill="#666D64" font-size="18" letter-spacing="3">MATHARTS / 共享基础</text>
+    <text x="52" y="139" fill="#242B28" font-size="76" font-weight="650" letter-spacing="-3">MathArts<tspan fill="#AC432F">/</tspan>core</text>
+    <text x="56" y="201" fill="#242B28" font-size="34">阴阳、五行、干支的 Rust 基础库</text>
+    <text x="58" y="243" fill="#666D64" font-size="22">严格构造 · 显式循环 · 固定关系</text>
+    <path d="M56 286H1144" stroke="#D4CEC1"/>
+    <g font-size="19" fill="#666D64">
+      <text x="58" y="327" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace">no_std · serde optional</text>
+      <text x="1144" y="327" text-anchor="end">10 天干 · 12 地支 · 60 甲子</text>
+    </g>
+  </g>
+  <g transform="translate(973 145)">
+    <circle r="110" stroke="#C9C4B7" stroke-width="12" pathLength="60" stroke-dasharray="0.14 0.86" transform="rotate(-90)"/>
+    <circle r="90" stroke="#D4CEC1"/>
+    <path d="M0 -119V-101" stroke="#AC432F" stroke-width="4"/>
+    <text y="-35" text-anchor="middle" fill="#666D64" font-family="ui-monospace, Menlo, monospace" font-size="18">00 / 59</text>
+    <text y="26" text-anchor="middle" fill="#242B28" font-family="'Songti SC', 'Noto Serif CJK SC', serif" font-size="66">甲子</text>
+    <text y="60" text-anchor="middle" fill="#AC432F" font-family="'PingFang SC', sans-serif" font-size="20">六十步，复归其始</text>
+  </g>
+</svg>

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "member_order": "ascending_domain_index",
+  "serde_model": "unit_variant",
+  "FiveCombination": [
+    {"index": 0, "code": "JiaJi", "members": ["Jia", "Ji"], "element": "Earth"},
+    {"index": 1, "code": "YiGeng", "members": ["Yi", "Geng"], "element": "Metal"},
+    {"index": 2, "code": "BingXin", "members": ["Bing", "Xin"], "element": "Water"},
+    {"index": 3, "code": "DingRen", "members": ["Ding", "Ren"], "element": "Wood"},
+    {"index": 4, "code": "WuGui", "members": ["Wu", "Gui"], "element": "Fire"}
+  ],
+  "SixCombination": [
+    {"index": 0, "code": "ZiChou", "members": ["Zi", "Chou"]},
+    {"index": 1, "code": "YinHai", "members": ["Yin", "Hai"]},
+    {"index": 2, "code": "MaoXu", "members": ["Mao", "Xu"]},
+    {"index": 3, "code": "ChenYou", "members": ["Chen", "You"]},
+    {"index": 4, "code": "SiShen", "members": ["Si", "Shen"]},
+    {"index": 5, "code": "WuWei", "members": ["Wu", "Wei"]}
+  ],
+  "invalid_json": [null, 0, 255, [], {}, "", "unknown", "甲己", "子丑"]
+}

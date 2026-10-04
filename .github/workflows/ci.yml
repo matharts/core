@@ -1,0 +1,40 @@
+name: Rust contracts
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned compiler and bare-metal target
+        run: rustup toolchain install 1.99.0 --profile minimal --component rustfmt,clippy --target thumbv7m-none-eabi
+      - name: Format and lint
+        run: |
+          cargo +1.99.0 fmt --check
+          cargo +1.99.0 clippy --all-targets --all-features --locked -- -D warnings
+      - name: Debug and release feature matrix
+        run: |
+          for profile in dev release; do
+            cargo +1.99.0 test --profile "$profile" --locked
+            cargo +1.99.0 test --profile "$profile" --features serde --locked
+          done
+      - name: Run public example across debug and release features
+        shell: bash
+        run: |
+          for profile in dev release; do
+            cargo +1.99.0 run --example ganzhi --profile "$profile" --locked
+            cargo +1.99.0 run --example ganzhi --profile "$profile" --features serde --locked
+          done
+      - name: Bare-metal libraries (no std, with and without serde)
+        run: |
+          cargo +1.99.0 build --lib --target thumbv7m-none-eabi --no-default-features --locked
+          cargo +1.99.0 build --lib --target thumbv7m-none-eabi --no-default-features --features serde --locked
+      - name: Public documentation
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: cargo +1.99.0 doc --no-deps --all-features --locked

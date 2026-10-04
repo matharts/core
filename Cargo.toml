@@ -1,0 +1,37 @@
+#:schema https://raw.githubusercontent.com/SchemaStore/schemastore/cf458e6e33141d3a0506f24279de79eeeeb5130a/src/schemas/json/cargo.json
+# 固定 lint 定义内嵌的 schema，避免 Even Better TOML 对外部引用的校验误报。
+
+[package]
+name = "matharts_core"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+authors = ["MathArts Contributors"]
+description = "Core primitives & algebraic infrastructure for the MathArts open-source ecosystem."
+license = "MIT"
+repository = "https://github.com/matharts/core"
+documentation = "https://docs.rs/matharts_core"
+readme = "README.md"
+keywords = ["metaphysics", "algebra", "ganzhi", "wuxing", "no-std"]
+categories = ["data-structures", "no-std", "science"]
+
+[features]
+default = []
+serde = ["dep:serde"]
+
+[dependencies]
+# 保持 no_std 兼容，仅在启用 serde 特性时引入
+serde = { version = "1.0", default-features = false, optional = true, features = ["derive"] }
+
+[dev-dependencies]
+proptest = "1.6"
+serde_json = "1.0"
+serde_test = "1.0.177"
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+must_use_candidate = "allow"

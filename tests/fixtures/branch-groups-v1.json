@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "member_order": "ascending_branch_index",
+  "serde_model": "unit_variant",
+  "ThreeCombination": [
+    {"index": 0, "code": "ShenZiChen", "members": ["Zi", "Chen", "Shen"], "element": "Water"},
+    {"index": 1, "code": "SiYouChou", "members": ["Chou", "Si", "You"], "element": "Metal"},
+    {"index": 2, "code": "YinWuXu", "members": ["Yin", "Wu", "Xu"], "element": "Fire"},
+    {"index": 3, "code": "HaiMaoWei", "members": ["Mao", "Wei", "Hai"], "element": "Wood"}
+  ],
+  "ThreeMeeting": [
+    {"index": 0, "code": "YinMaoChen", "members": ["Yin", "Mao", "Chen"], "element": "Wood"},
+    {"index": 1, "code": "SiWuWei", "members": ["Si", "Wu", "Wei"], "element": "Fire"},
+    {"index": 2, "code": "ShenYouXu", "members": ["Shen", "You", "Xu"], "element": "Metal"},
+    {"index": 3, "code": "HaiZiChou", "members": ["Zi", "Chou", "Hai"], "element": "Water"}
+  ]
+}

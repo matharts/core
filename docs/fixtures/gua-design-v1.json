@@ -1,0 +1,291 @@
+{
+  "status": "design-only-not-a-released-encoding",
+  "serde_model": {
+    "Trigram": {"kind": "unit_variant", "name": "Trigram", "variants": ["Kun", "Zhen", "Kan", "Dui", "Gen", "Li", "Xun", "Qian"]},
+    "TrigramPosition": {"kind": "unit_variant", "name": "TrigramPosition", "variants": ["First", "Second", "Third"]},
+    "HexagramPosition": {"kind": "unit_variant", "name": "HexagramPosition", "variants": ["First", "Second", "Third", "Fourth", "Fifth", "Sixth"]},
+    "Hexagram": {"kind": "struct", "name": "Hexagram", "length": 2, "fields": ["lower", "upper"]},
+    "variant_index": "zero-based index in variants array",
+    "human_readable_input": "map-only",
+    "non_human_readable_input": "strict-map-or-two-element-struct-sequence"
+  },
+  "bit_convention": {
+    "bottom_line_bit": 0,
+    "yang": 1,
+    "yin": 0,
+    "lines_order": "bottom-to-top"
+  },
+  "trigrams": [
+    {
+      "code": "Kun",
+      "name": "坤",
+      "bits": 0,
+      "lines": [
+        "Yin",
+        "Yin",
+        "Yin"
+      ]
+    },
+    {
+      "code": "Zhen",
+      "name": "震",
+      "bits": 1,
+      "lines": [
+        "Yang",
+        "Yin",
+        "Yin"
+      ]
+    },
+    {
+      "code": "Kan",
+      "name": "坎",
+      "bits": 2,
+      "lines": [
+        "Yin",
+        "Yang",
+        "Yin"
+      ]
+    },
+    {
+      "code": "Dui",
+      "name": "兑",
+      "bits": 3,
+      "lines": [
+        "Yang",
+        "Yang",
+        "Yin"
+      ]
+    },
+    {
+      "code": "Gen",
+      "name": "艮",
+      "bits": 4,
+      "lines": [
+        "Yin",
+        "Yin",
+        "Yang"
+      ]
+    },
+    {
+      "code": "Li",
+      "name": "离",
+      "bits": 5,
+      "lines": [
+        "Yang",
+        "Yin",
+        "Yang"
+      ]
+    },
+    {
+      "code": "Xun",
+      "name": "巽",
+      "bits": 6,
+      "lines": [
+        "Yin",
+        "Yang",
+        "Yang"
+      ]
+    },
+    {
+      "code": "Qian",
+      "name": "乾",
+      "bits": 7,
+      "lines": [
+        "Yang",
+        "Yang",
+        "Yang"
+      ]
+    }
+  ],
+  "hexagram_cases": [
+    {
+      "label": "乾",
+      "lower": "Qian",
+      "upper": "Qian",
+      "bits": 63,
+      "lines": [
+        "Yang",
+        "Yang",
+        "Yang",
+        "Yang",
+        "Yang",
+        "Yang"
+      ],
+      "wire": {
+        "lower": "Qian",
+        "upper": "Qian"
+      }
+    },
+    {
+      "label": "坤",
+      "lower": "Kun",
+      "upper": "Kun",
+      "bits": 0,
+      "lines": [
+        "Yin",
+        "Yin",
+        "Yin",
+        "Yin",
+        "Yin",
+        "Yin"
+      ],
+      "wire": {
+        "lower": "Kun",
+        "upper": "Kun"
+      }
+    },
+    {
+      "label": "泰",
+      "lower": "Qian",
+      "upper": "Kun",
+      "bits": 7,
+      "lines": [
+        "Yang",
+        "Yang",
+        "Yang",
+        "Yin",
+        "Yin",
+        "Yin"
+      ],
+      "wire": {
+        "lower": "Qian",
+        "upper": "Kun"
+      }
+    },
+    {
+      "label": "否",
+      "lower": "Kun",
+      "upper": "Qian",
+      "bits": 56,
+      "lines": [
+        "Yin",
+        "Yin",
+        "Yin",
+        "Yang",
+        "Yang",
+        "Yang"
+      ],
+      "wire": {
+        "lower": "Kun",
+        "upper": "Qian"
+      }
+    },
+    {
+      "label": "姤",
+      "lower": "Xun",
+      "upper": "Qian",
+      "bits": 62,
+      "lines": [
+        "Yin",
+        "Yang",
+        "Yang",
+        "Yang",
+        "Yang",
+        "Yang"
+      ],
+      "wire": {
+        "lower": "Xun",
+        "upper": "Qian"
+      }
+    },
+    {
+      "label": "屯",
+      "lower": "Zhen",
+      "upper": "Kan",
+      "bits": 17,
+      "lines": [
+        "Yang",
+        "Yin",
+        "Yin",
+        "Yin",
+        "Yang",
+        "Yin"
+      ],
+      "wire": {
+        "lower": "Zhen",
+        "upper": "Kan"
+      }
+    }
+  ],
+  "invalid_trigram_bits": [
+    8,
+    255
+  ],
+  "invalid_hexagram_bits": [
+    64,
+    255
+  ],
+  "invalid_hexagram_json": [
+    null,
+    0,
+    [],
+    ["Qian", "Kun"],
+    ["Kun", "Qian"],
+    ["Qian"],
+    ["Qian", "Kun", "Kan"],
+    "Qian",
+    true,
+    {"lower": {"Qian": null}, "upper": "Kun"},
+    {},
+    {
+      "lower": "Qian"
+    },
+    {
+      "lower": "Qian",
+      "upper": "unknown"
+    },
+    {
+      "lower": 7,
+      "upper": 0
+    },
+    {
+      "lower": "乾",
+      "upper": "坤"
+    },
+    {
+      "lower": "Qian",
+      "upper": "Kun",
+      "moving_line": 1
+    }
+  ],
+  "invalid_hexagram_json_text": [
+    "{\"lower\":\"Qian\",\"lower\":\"Kun\",\"upper\":\"Kun\"}",
+    "{\"lower\":\"Qian\",\"upper\":\"Kun\",\"upper\":\"Qian\"}"
+  ],
+  "sources": [
+    {
+      "id": "meihua",
+      "url": "https://zh.wikisource.org/wiki/梅花易數/卷一",
+      "sections": [
+        "八卦象例",
+        "周易卦數",
+        "爻以六除",
+        "互卦起例"
+      ]
+    },
+    {
+      "id": "tai",
+      "url": "https://zh.wikisource.org/wiki/周易/泰",
+      "supports": [
+        "泰上下卦及六爻"
+      ]
+    },
+    {
+      "id": "pi",
+      "url": "https://zh.wikisource.org/wiki/周易/否",
+      "supports": [
+        "否上下卦及六爻"
+      ]
+    },
+    {
+      "id": "boshi",
+      "url": "https://www.quanxue.cn/qt_mingxiang/boshi/boshi06.html",
+      "supports": [
+        "乾为天",
+        "天风姤",
+        "水雷屯",
+        "六爻形状与应用字段分离"
+      ]
+    }
+  ]
+}

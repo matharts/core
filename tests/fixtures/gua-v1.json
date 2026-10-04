@@ -1,0 +1,762 @@
+{
+  "status": "frozen-gua-encoding-v1",
+  "serde_model": {
+    "Trigram": {
+      "kind": "unit_variant",
+      "name": "Trigram",
+      "variants": [
+        "Kun",
+        "Zhen",
+        "Kan",
+        "Dui",
+        "Gen",
+        "Li",
+        "Xun",
+        "Qian"
+      ]
+    },
+    "TrigramPosition": {
+      "kind": "unit_variant",
+      "name": "TrigramPosition",
+      "variants": [
+        "First",
+        "Second",
+        "Third"
+      ]
+    },
+    "HexagramPosition": {
+      "kind": "unit_variant",
+      "name": "HexagramPosition",
+      "variants": [
+        "First",
+        "Second",
+        "Third",
+        "Fourth",
+        "Fifth",
+        "Sixth"
+      ]
+    },
+    "Hexagram": {
+      "kind": "struct",
+      "name": "Hexagram",
+      "length": 2,
+      "fields": [
+        "lower",
+        "upper"
+      ]
+    },
+    "variant_index": "zero-based index in variants array",
+    "human_readable_input": "map-only",
+    "non_human_readable_input": "strict-map-or-two-element-struct-sequence"
+  },
+  "bit_convention": {
+    "bottom_line_bit": 0,
+    "yang": 1,
+    "yin": 0,
+    "lines_order": "bottom-to-top"
+  },
+  "trigrams": [
+    {
+      "code": "Kun",
+      "name": "坤",
+      "bits": 0,
+      "lines": [
+        "Yin",
+        "Yin",
+        "Yin"
+      ]
+    },
+    {
+      "code": "Zhen",
+      "name": "震",
+      "bits": 1,
+      "lines": [
+        "Yang",
+        "Yin",
+        "Yin"
+      ]
+    },
+    {
+      "code": "Kan",
+      "name": "坎",
+      "bits": 2,
+      "lines": [
+        "Yin",
+        "Yang",
+        "Yin"
+      ]
+    },
+    {
+      "code": "Dui",
+      "name": "兑",
+      "bits": 3,
+      "lines": [
+        "Yang",
+        "Yang",
+        "Yin"
+      ]
+    },
+    {
+      "code": "Gen",
+      "name": "艮",
+      "bits": 4,
+      "lines": [
+        "Yin",
+        "Yin",
+        "Yang"
+      ]
+    },
+    {
+      "code": "Li",
+      "name": "离",
+      "bits": 5,
+      "lines": [
+        "Yang",
+        "Yin",
+        "Yang"
+      ]
+    },
+    {
+      "code": "Xun",
+      "name": "巽",
+      "bits": 6,
+      "lines": [
+        "Yin",
+        "Yang",
+        "Yang"
+      ]
+    },
+    {
+      "code": "Qian",
+      "name": "乾",
+      "bits": 7,
+      "lines": [
+        "Yang",
+        "Yang",
+        "Yang"
+      ]
+    }
+  ],
+  "hexagram_cases": [
+    {
+      "label": "乾",
+      "lower": "Qian",
+      "upper": "Qian",
+      "bits": 63,
+      "lines": [
+        "Yang",
+        "Yang",
+        "Yang",
+        "Yang",
+        "Yang",
+        "Yang"
+      ],
+      "wire": {
+        "lower": "Qian",
+        "upper": "Qian"
+      }
+    },
+    {
+      "label": "坤",
+      "lower": "Kun",
+      "upper": "Kun",
+      "bits": 0,
+      "lines": [
+        "Yin",
+        "Yin",
+        "Yin",
+        "Yin",
+        "Yin",
+        "Yin"
+      ],
+      "wire": {
+        "lower": "Kun",
+        "upper": "Kun"
+      }
+    },
+    {
+      "label": "泰",
+      "lower": "Qian",
+      "upper": "Kun",
+      "bits": 7,
+      "lines": [
+        "Yang",
+        "Yang",
+        "Yang",
+        "Yin",
+        "Yin",
+        "Yin"
+      ],
+      "wire": {
+        "lower": "Qian",
+        "upper": "Kun"
+      }
+    },
+    {
+      "label": "否",
+      "lower": "Kun",
+      "upper": "Qian",
+      "bits": 56,
+      "lines": [
+        "Yin",
+        "Yin",
+        "Yin",
+        "Yang",
+        "Yang",
+        "Yang"
+      ],
+      "wire": {
+        "lower": "Kun",
+        "upper": "Qian"
+      }
+    },
+    {
+      "label": "姤",
+      "lower": "Xun",
+      "upper": "Qian",
+      "bits": 62,
+      "lines": [
+        "Yin",
+        "Yang",
+        "Yang",
+        "Yang",
+        "Yang",
+        "Yang"
+      ],
+      "wire": {
+        "lower": "Xun",
+        "upper": "Qian"
+      }
+    },
+    {
+      "label": "屯",
+      "lower": "Zhen",
+      "upper": "Kan",
+      "bits": 17,
+      "lines": [
+        "Yang",
+        "Yin",
+        "Yin",
+        "Yin",
+        "Yang",
+        "Yin"
+      ],
+      "wire": {
+        "lower": "Zhen",
+        "upper": "Kan"
+      }
+    }
+  ],
+  "invalid_trigram_bits": [
+    8,
+    255
+  ],
+  "invalid_hexagram_bits": [
+    64,
+    255
+  ],
+  "invalid_hexagram_json": [
+    null,
+    0,
+    [],
+    [
+      "Qian",
+      "Kun"
+    ],
+    [
+      "Kun",
+      "Qian"
+    ],
+    [
+      "Qian"
+    ],
+    [
+      "Qian",
+      "Kun",
+      "Kan"
+    ],
+    "Qian",
+    true,
+    {
+      "lower": {
+        "Qian": null
+      },
+      "upper": "Kun"
+    },
+    {},
+    {
+      "lower": "Qian"
+    },
+    {
+      "lower": "Qian",
+      "upper": "unknown"
+    },
+    {
+      "lower": 7,
+      "upper": 0
+    },
+    {
+      "lower": "乾",
+      "upper": "坤"
+    },
+    {
+      "lower": "Qian",
+      "upper": "Kun",
+      "moving_line": 1
+    }
+  ],
+  "invalid_hexagram_json_text": [
+    "{\"lower\":\"Qian\",\"lower\":\"Kun\",\"upper\":\"Kun\"}",
+    "{\"lower\":\"Qian\",\"upper\":\"Kun\",\"upper\":\"Qian\"}"
+  ],
+  "hexagrams": [
+    {
+      "bits": 0,
+      "wire": {
+        "lower": "Kun",
+        "upper": "Kun"
+      }
+    },
+    {
+      "bits": 1,
+      "wire": {
+        "lower": "Zhen",
+        "upper": "Kun"
+      }
+    },
+    {
+      "bits": 2,
+      "wire": {
+        "lower": "Kan",
+        "upper": "Kun"
+      }
+    },
+    {
+      "bits": 3,
+      "wire": {
+        "lower": "Dui",
+        "upper": "Kun"
+      }
+    },
+    {
+      "bits": 4,
+      "wire": {
+        "lower": "Gen",
+        "upper": "Kun"
+      }
+    },
+    {
+      "bits": 5,
+      "wire": {
+        "lower": "Li",
+        "upper": "Kun"
+      }
+    },
+    {
+      "bits": 6,
+      "wire": {
+        "lower": "Xun",
+        "upper": "Kun"
+      }
+    },
+    {
+      "bits": 7,
+      "wire": {
+        "lower": "Qian",
+        "upper": "Kun"
+      }
+    },
+    {
+      "bits": 8,
+      "wire": {
+        "lower": "Kun",
+        "upper": "Zhen"
+      }
+    },
+    {
+      "bits": 9,
+      "wire": {
+        "lower": "Zhen",
+        "upper": "Zhen"
+      }
+    },
+    {
+      "bits": 10,
+      "wire": {
+        "lower": "Kan",
+        "upper": "Zhen"
+      }
+    },
+    {
+      "bits": 11,
+      "wire": {
+        "lower": "Dui",
+        "upper": "Zhen"
+      }
+    },
+    {
+      "bits": 12,
+      "wire": {
+        "lower": "Gen",
+        "upper": "Zhen"
+      }
+    },
+    {
+      "bits": 13,
+      "wire": {
+        "lower": "Li",
+        "upper": "Zhen"
+      }
+    },
+    {
+      "bits": 14,
+      "wire": {
+        "lower": "Xun",
+        "upper": "Zhen"
+      }
+    },
+    {
+      "bits": 15,
+      "wire": {
+        "lower": "Qian",
+        "upper": "Zhen"
+      }
+    },
+    {
+      "bits": 16,
+      "wire": {
+        "lower": "Kun",
+        "upper": "Kan"
+      }
+    },
+    {
+      "bits": 17,
+      "wire": {
+        "lower": "Zhen",
+        "upper": "Kan"
+      }
+    },
+    {
+      "bits": 18,
+      "wire": {
+        "lower": "Kan",
+        "upper": "Kan"
+      }
+    },
+    {
+      "bits": 19,
+      "wire": {
+        "lower": "Dui",
+        "upper": "Kan"
+      }
+    },
+    {
+      "bits": 20,
+      "wire": {
+        "lower": "Gen",
+        "upper": "Kan"
+      }
+    },
+    {
+      "bits": 21,
+      "wire": {
+        "lower": "Li",
+        "upper": "Kan"
+      }
+    },
+    {
+      "bits": 22,
+      "wire": {
+        "lower": "Xun",
+        "upper": "Kan"
+      }
+    },
+    {
+      "bits": 23,
+      "wire": {
+        "lower": "Qian",
+        "upper": "Kan"
+      }
+    },
+    {
+      "bits": 24,
+      "wire": {
+        "lower": "Kun",
+        "upper": "Dui"
+      }
+    },
+    {
+      "bits": 25,
+      "wire": {
+        "lower": "Zhen",
+        "upper": "Dui"
+      }
+    },
+    {
+      "bits": 26,
+      "wire": {
+        "lower": "Kan",
+        "upper": "Dui"
+      }
+    },
+    {
+      "bits": 27,
+      "wire": {
+        "lower": "Dui",
+        "upper": "Dui"
+      }
+    },
+    {
+      "bits": 28,
+      "wire": {
+        "lower": "Gen",
+        "upper": "Dui"
+      }
+    },
+    {
+      "bits": 29,
+      "wire": {
+        "lower": "Li",
+        "upper": "Dui"
+      }
+    },
+    {
+      "bits": 30,
+      "wire": {
+        "lower": "Xun",
+        "upper": "Dui"
+      }
+    },
+    {
+      "bits": 31,
+      "wire": {
+        "lower": "Qian",
+        "upper": "Dui"
+      }
+    },
+    {
+      "bits": 32,
+      "wire": {
+        "lower": "Kun",
+        "upper": "Gen"
+      }
+    },
+    {
+      "bits": 33,
+      "wire": {
+        "lower": "Zhen",
+        "upper": "Gen"
+      }
+    },
+    {
+      "bits": 34,
+      "wire": {
+        "lower": "Kan",
+        "upper": "Gen"
+      }
+    },
+    {
+      "bits": 35,
+      "wire": {
+        "lower": "Dui",
+        "upper": "Gen"
+      }
+    },
+    {
+      "bits": 36,
+      "wire": {
+        "lower": "Gen",
+        "upper": "Gen"
+      }
+    },
+    {
+      "bits": 37,
+      "wire": {
+        "lower": "Li",
+        "upper": "Gen"
+      }
+    },
+    {
+      "bits": 38,
+      "wire": {
+        "lower": "Xun",
+        "upper": "Gen"
+      }
+    },
+    {
+      "bits": 39,
+      "wire": {
+        "lower": "Qian",
+        "upper": "Gen"
+      }
+    },
+    {
+      "bits": 40,
+      "wire": {
+        "lower": "Kun",
+        "upper": "Li"
+      }
+    },
+    {
+      "bits": 41,
+      "wire": {
+        "lower": "Zhen",
+        "upper": "Li"
+      }
+    },
+    {
+      "bits": 42,
+      "wire": {
+        "lower": "Kan",
+        "upper": "Li"
+      }
+    },
+    {
+      "bits": 43,
+      "wire": {
+        "lower": "Dui",
+        "upper": "Li"
+      }
+    },
+    {
+      "bits": 44,
+      "wire": {
+        "lower": "Gen",
+        "upper": "Li"
+      }
+    },
+    {
+      "bits": 45,
+      "wire": {
+        "lower": "Li",
+        "upper": "Li"
+      }
+    },
+    {
+      "bits": 46,
+      "wire": {
+        "lower": "Xun",
+        "upper": "Li"
+      }
+    },
+    {
+      "bits": 47,
+      "wire": {
+        "lower": "Qian",
+        "upper": "Li"
+      }
+    },
+    {
+      "bits": 48,
+      "wire": {
+        "lower": "Kun",
+        "upper": "Xun"
+      }
+    },
+    {
+      "bits": 49,
+      "wire": {
+        "lower": "Zhen",
+        "upper": "Xun"
+      }
+    },
+    {
+      "bits": 50,
+      "wire": {
+        "lower": "Kan",
+        "upper": "Xun"
+      }
+    },
+    {
+      "bits": 51,
+      "wire": {
+        "lower": "Dui",
+        "upper": "Xun"
+      }
+    },
+    {
+      "bits": 52,
+      "wire": {
+        "lower": "Gen",
+        "upper": "Xun"
+      }
+    },
+    {
+      "bits": 53,
+      "wire": {
+        "lower": "Li",
+        "upper": "Xun"
+      }
+    },
+    {
+      "bits": 54,
+      "wire": {
+        "lower": "Xun",
+        "upper": "Xun"
+      }
+    },
+    {
+      "bits": 55,
+      "wire": {
+        "lower": "Qian",
+        "upper": "Xun"
+      }
+    },
+    {
+      "bits": 56,
+      "wire": {
+        "lower": "Kun",
+        "upper": "Qian"
+      }
+    },
+    {
+      "bits": 57,
+      "wire": {
+        "lower": "Zhen",
+        "upper": "Qian"
+      }
+    },
+    {
+      "bits": 58,
+      "wire": {
+        "lower": "Kan",
+        "upper": "Qian"
+      }
+    },
+    {
+      "bits": 59,
+      "wire": {
+        "lower": "Dui",
+        "upper": "Qian"
+      }
+    },
+    {
+      "bits": 60,
+      "wire": {
+        "lower": "Gen",
+        "upper": "Qian"
+      }
+    },
+    {
+      "bits": 61,
+      "wire": {
+        "lower": "Li",
+        "upper": "Qian"
+      }
+    },
+    {
+      "bits": 62,
+      "wire": {
+        "lower": "Xun",
+        "upper": "Qian"
+      }
+    },
+    {
+      "bits": 63,
+      "wire": {
+        "lower": "Qian",
+        "upper": "Qian"
+      }
+    }
+  ]
+}

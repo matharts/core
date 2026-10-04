@@ -1,0 +1,11 @@
+{
+  "Xun": ["JiaZi", "JiaXu", "JiaShen", "JiaWu", "JiaChen", "JiaYin"],
+  "Nayin": [
+    "HaiZhongJin", "LuZhongHuo", "DaLinMu", "LuPangTu", "JianFengJin",
+    "ShanTouHuo", "JianXiaShui", "ChengTouTu", "BaiLaJin", "YangLiuMu",
+    "QuanZhongShui", "WuShangTu", "PiLiHuo", "SongBaiMu", "ChangLiuShui",
+    "ShaZhongJin", "ShanXiaHuo", "PingDiMu", "BiShangTu", "JinBoJin",
+    "FuDengHuo", "TianHeShui", "DaYiTu", "ChaiChuanJin", "SangZheMu",
+    "DaXiShui", "ShaZhongTu", "TianShangHuo", "ShiLiuMu", "DaHaiShui"
+  ]
+}
