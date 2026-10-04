@@ -1,11 +1,3 @@
----
-meta:
-  contentType: "Landing"
-  title: "MathArts Core"
-  navLabel: "项目首页"
-  category: "项目入口"
----
-
 <picture>
   <source media="(max-width: 600px)" srcset="assets/readme/hero-mobile.svg" />
   <img src="assets/readme/hero.svg" width="100%" alt="MathArts Core：阴阳、五行、干支的 Rust 基础库。十天干与十二地支同步步进，六十步回到甲子。" />
