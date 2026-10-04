@@ -1,3 +1,11 @@
+---
+meta:
+  contentType: "Landing"
+  title: "MathArts Core"
+  navLabel: "项目首页"
+  category: "项目入口"
+---
+
 <picture>
   <source media="(max-width: 600px)" srcset="assets/readme/hero-mobile.svg" />
   <img src="assets/readme/hero.svg" width="100%" alt="MathArts Core：阴阳、五行、干支的 Rust 基础库。十天干与十二地支同步步进，六十步回到甲子。" />
@@ -7,7 +15,7 @@
 
 阴阳、五行与干支的 Rust 基础库。用可校验的类型、循环步进和固定关系查询，构建数术项目中共用的基础模型。
 
-[运行示例](#运行完整示例) · [本地接入](#本地接入) · [规则边界](#规则边界) · [开发验证](#开发验证)
+[运行示例](#运行完整示例) · [本地接入](#本地接入) · [文档](#文档) · [规则边界](#规则边界) · [开发验证](#开发验证)
 
 ## 一个甲子的循环
 
@@ -45,7 +53,7 @@ assert_eq!(value.nayin().name(), "海中金");
 assert_eq!(value.nayin().element(), Element::Metal);
 ```
 
-`Xun` 是六十甲子的六旬，不是民用月份的上中下旬。`Nayin` 区分海中金、剑锋金等身份，其索引不提供循环操作。两类都支持严格 `TryFrom<u8>` 和可选 Serde；名称异写、稳定编码与证据边界见[规则文档](docs/rules.md#旬与纳音身份)。
+`Xun` 是六十甲子的六旬，不是民用月份的上中下旬。`Nayin` 区分海中金、剑锋金等身份，其索引不提供循环操作。两类都支持严格 `TryFrom<u8>` 和可选 Serde；当前名称与成员以类型声明、rustdoc 和独立测试为准。
 
 ## 五合与六合配对
 
@@ -63,10 +71,15 @@ assert_eq!(group.element(), Element::Earth);
 assert_eq!(FiveCombination::from_stems([Stem::Ji, Stem::Jia]), Some(group));
 assert_eq!(FiveCombination::from_stems([Stem::Jia; 2]), None);
 assert_eq!(Branch::Hai.six_combination(), SixCombination::YinHai);
-assert_eq!(SixCombination::from_branches([Branch::Hai, Branch::Yin]), Some(SixCombination::YinHai));
+assert_eq!(
+    SixCombination::from_branches([Branch::Hai, Branch::Yin]),
+    Some(SixCombination::YinHai),
+);
 ```
 
-两种类型分别归入天干 `stem` 与地支 `branch` 模块，也在 crate 根导出。成员按各自索引升序，身份索引严格校验且不回绕；五合五行只是固定对应，六合不提供合化五行。旧伙伴方法移除，迁移路径见[迁移说明](docs/migration.md)，来源、消费对照及限制见[配对关系](docs/pair-groups.md)。
+从天干 `stem` 或地支 `branch` 模块导入对应类型，也可使用 crate 根导出。成员按索引升序排列，身份索引严格校验且不回绕。五合五行是固定对应，六合没有合化五行接口。
+
+升级旧伙伴方法时，查看[接口变更](#接口变更)。固定配对不代表实际成合、成化或吉凶。
 
 ## 六冲、六害与六破配对
 
@@ -77,13 +90,22 @@ use matharts_core::{Branch, SixBreak, SixClash, SixCombination, SixHarm};
 
 assert_eq!(Branch::Zi.six_clash(), SixClash::ZiWu);
 assert_eq!(Branch::Zi.six_harm().partner_of(Branch::Zi), Some(Branch::Wei));
-assert_eq!(SixHarm::from_branches([Branch::Wei, Branch::Zi]), Some(SixHarm::ZiWei));
+assert_eq!(
+    SixHarm::from_branches([Branch::Wei, Branch::Zi]),
+    Some(SixHarm::ZiWei),
+);
 assert_eq!(SixClash::from_branches([Branch::Zi; 2]), None);
-assert_eq!(SixBreak::from_branches([Branch::Si, Branch::Shen]), Some(SixBreak::SiShen));
-assert_eq!(SixCombination::from_branches([Branch::Si, Branch::Shen]), Some(SixCombination::SiShen));
+assert_eq!(
+    SixBreak::from_branches([Branch::Si, Branch::Shen]),
+    Some(SixBreak::SiShen),
+);
+assert_eq!(
+    SixCombination::from_branches([Branch::Si, Branch::Shen]),
+    Some(SixCombination::SiShen),
+);
 ```
 
-成员按地支索引升序，身份索引严格校验。原 `is_clashing_with`、`is_harming`、`is_breaking` 委托类型识别；刑仍保留方向。六破限定采用《六壬大全》表，跨体系复用证据待补；来源、差异及应用边界见[地支配对](docs/branch-pairs.md)。
+成员按地支索引升序，身份索引严格校验。原 `is_clashing_with`、`is_harming`、`is_breaking` 委托类型识别；刑仍保留方向。六破限定采用《六壬大全》表，跨体系复用证据待补，不代表所有体系的“破”。
 
 ## 地支完整关系组
 
@@ -106,7 +128,7 @@ assert_eq!(ThreeCombination::from_branches([Branch::Zi; 3]), None);
 assert_eq!(Branch::Hai.three_meeting(), ThreeMeeting::HaiZiChou);
 ```
 
-成员数组按地支索引升序；冬方返回子、丑、亥。`from_branches()` 忽略输入排列并拒绝重复、混组，仅识别集合；应用层保留三传等原始顺序并判断具体条件。完整组替代旧伙伴元组入口。来源、编码和验收见[完整关系组](docs/branch-groups.md)。
+成员数组按地支索引升序；冬方返回子、丑、亥。`from_branches()` 忽略输入排列并拒绝重复、混组，仅识别集合；应用层保留三传等原始顺序并判断具体条件。完整组替代旧伙伴元组入口，编码及验收由独立样本和生产测试锁定。
 
 ## 八卦与六爻结构
 
@@ -125,7 +147,9 @@ assert_eq!((gou.lower(), gou.upper()), (Trigram::Xun, Trigram::Qian));
 
 `try_from_bits()` 严格拒绝越界编码；两种爻位类型各自提供严格 `TryFrom<u8>`。`complement()` 交换阴阳，`reverse_lines()` 倒置完整爻序。位编码不代表传统卦序，`Trigram::Xun` 是巽卦，根类型 `Xun` 是旬。
 
-可选 Serde 使用固定枚举模型和 `{"lower":"Qian","upper":"Kun"}` 结构体表示。JSON 只接受对象，拒绝数组、未知／重复／缺失字段；枚举只接受固定代码字符串。模型契约见[爻卦方案](docs/gua-design.md#6-序列化与兼容)，固定样本见 [gua-v1.json](tests/fixtures/gua-v1.json)。本批不提供六十四卦名称、文王序、动爻选择或占断规则。
+启用 Serde 后，六爻结构编码为 `{"lower":"Qian","upper":"Kun"}`。JSON（JavaScript Object Notation）解码只接受具名对象，并拒绝数组及未知、重复、缺失字段；枚举只接受固定代码字符串。
+
+固定编码见 [gua-v1.json](tests/fixtures/gua-v1.json)，结构和编码契约分别由 [gua.rs](tests/gua.rs)、[gua_serde.rs](tests/gua_serde.rs) 验收。当前接口不提供六十四卦名称、文王序、动爻选择或占断规则。
 
 ## 中文文本解析与显示
 
@@ -180,7 +204,7 @@ cd core-demo
 在应用的 `Cargo.toml` 中找到 `[dependencies]`，添加：
 
 ```toml
-matharts-core = { path = "../core", default-features = false }
+matharts_core = { path = "../core", default-features = false }
 ```
 
 ### 3. 运行示例
@@ -205,13 +229,36 @@ cargo run
 | 序列化 | 添加 `features = ["serde"]`；反序列化也校验干支配对   |
 | 环境   | 库始终使用 `no_std`，默认无特性；不提供 `std` feature |
 
-全库采用当前契约，不保留旧 API 或旧数据兼容层。可读 Serde 枚举仅接受代码字符串，记录仅接受具名对象，并拒绝未知、重复与缺失字段。藏干第三槽字段为 `tertiary`，空槽位显式编码为 `null`。变更与当前样本见[API 与编码说明](docs/migration.md)，实际验证见[清理记录](docs/breaking-cleanup.md)。
+全库采用当前契约，不保留旧 API 或旧数据兼容层。可读 Serde 枚举仅接受代码字符串，记录仅接受具名对象，并拒绝数组、未知、重复与缺失字段。`SexagenaryCycle` 对象必须提供 `stem`、`branch` 并通过阴阳配对校验；`HiddenStems` 必须提供 `primary`、`secondary`、`tertiary`，空槽位显式编码为 `null`，允许重复成员及第三槽独立存在；`Hexagram` 必须提供 `lower`、`upper`。紧凑格式使用原生 unit variant／struct 模型，不承诺任意第三方格式的字节兼容。当前编码以 [tests/fixtures/](tests/fixtures/) 的六份有版本独立样本为准，编码和解码分别验收。
+
+### 接口变更
+
+升级旧调用时按下表替换；旧名称、模块及编码不会自动兼容：
+
+| 旧入口或表示 | 当前调用 |
+| --- | --- |
+| `triangle_combination()`、`three_combination_partners()` | `branch.three_combination().members()` |
+| `nayin_identity()`、原 `nayin() -> Element` | `value.nayin()` 返回身份，五行由 `.element()` 查询 |
+| `xun_start_branch()`、`leader_branch()` | `value.xun().leader().branch()` |
+| `void_branches()`、`is_void_branch()`、`is_void()` | 通过 `value.xun()` 查询缺位地支及归属 |
+| `Stem::polarity()`、`Branch::polarity()` | `primitive()` |
+| `wuhu_dun`、`wushu_dun`、`dun` | `stem_derivation::{derive_month_stem, derive_hour_stem}` |
+| `HiddenStems::residual` 及旧 Serde 键 | `tertiary`，空槽必须显式为 `null` |
+| `combination_stem()` | `stem.five_combination().partner_of(stem)` |
+| `transformed_element()`、`combination_element()` | `stem.five_combination().element()` |
+| `ten_god_to()`、`clashing_with()` | `ten_god_of()`、`is_clashing_with()` |
+| 原 `six_combination() -> Branch`、`six_combination_partner()` | `branch.six_combination()` 返回身份，伙伴由 `.partner_of(branch)` 查询 |
+| 独立关系模块及辅助模块 `combination`、`branch_relations`、`serde_support` | 五合归 `stem`，其他关系归 `branch`；也可使用 crate 根导出 |
+| `CyclicRing::MODULUS: u8` | `NonZeroU8`；`forward_distance` 接受非零周期，外部 `u8` 用 `checked_forward_distance` |
+| `std` feature | 移除；默认无特性，只有可选 `serde` |
+
+成员数组按领域索引升序；`partner_of()` 对非成员返回 `None`，完整集合识别拒绝重复和混组。模块收拢不改变身份代码、索引或成员。严格外部索引与周期回绕分开，全部 `i32` 步进安全约减。
 
 ## 规则边界
 
 Core 面向跨数术共享的基础模型。日期、节气、换日和各体系的应用条件由上层领域库处理。
 
-现有十神、长生、藏干、刑合等查询采用固定映射。使用前请查阅[规则定义与证据边界](docs/rules.md)，确认采用的定义和核验状态；它们在不同体系中的适用性仍需逐项核验。固定关系查询不判断实际成局、成化或吉凶。
+现有十神、长生、藏干、刑合等查询采用固定映射。使用前核对相应类型或方法的 rustdoc、源码和独立测试；它们在不同体系中的适用性仍需逐项核验。固定关系查询不判断实际成局、成化或吉凶。
 
 ## 开发验证
 
@@ -244,6 +291,18 @@ mise exec -- hk check --all --slow
 ```sh
 mise exec -- cargo doc --no-deps --all-features --open
 ```
+
+## 文档
+
+| 内容 | 唯一维护入口 |
+| --- | --- |
+| 接入、接口变更与开发验证 | 本 README；类型、签名和示例由生成的 rustdoc 提供 |
+| 项目职责、文件组织与验证要求 | [AGENTS.md](AGENTS.md) |
+| 统一领域术语 | [CONTEXT.md](CONTEXT.md) |
+| 领域结构、固定关系与编码契约 | 所属类型的 rustdoc、源码及 `tests/` 中的独立样本和测试 |
+| 工程技能配置 | [Issue 操作](docs/agents/issue-tracker.md)、[分诊标签](docs/agents/triage-labels.md)、[领域文档规则](docs/agents/domain.md) |
+
+生产样本仅在 `tests/fixtures/` 维护；新增决策按需记录到 `docs/adr/`。历史规划、审查过程和过去验收结果从 Git 历史追溯。
 
 ## 许可证
 

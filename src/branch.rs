@@ -1316,7 +1316,6 @@ impl<'de> serde::Deserialize<'de> for SixBreak {
 /// 四种完整三合组，不判断实际成局、成化或吉凶。
 ///
 /// 成员输出按地支零基索引升序；身份代码的文字次序不是数组次序。
-/// 固定定义及跨体系核验见仓库文档 `docs/branch-groups.md`。
 ///
 /// ```
 /// use matharts_core::{Branch, Element, ThreeCombination};
@@ -1509,7 +1508,6 @@ impl<'de> serde::Deserialize<'de> for ThreeCombination {
 /// 四种完整三会（方合）组，不判断实际成局、成化或吉凶。
 ///
 /// 成员输出按地支零基索引升序；身份代码的文字次序不是数组次序。
-/// 固定定义及跨体系核验见仓库文档 `docs/branch-groups.md`。
 ///
 /// ```
 /// use matharts_core::{Branch, Element, ThreeMeeting};

@@ -3,7 +3,7 @@
 use matharts_core::{Branch, CyclicRing, Element, InvalidIndex, Nayin, SexagenaryCycle, Stem, Xun};
 
 // 固定验收表独立写出身份、名称、五行和两柱，不由实现查询生成预期。
-// 纳音对应来源及异写记录见 docs/rules.md 的“旬与纳音身份”。
+// 纳音采用当前显示用字；文献异写不作为另一个身份。
 type NayinCase = (Nayin, &'static str, Element, [(Stem, Branch); 2]);
 
 const NAYIN_CASES: [NayinCase; 30] = {
