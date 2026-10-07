@@ -1,6 +1,26 @@
 //! 三十种纳音身份及其干支配对、五行；不包含取象吉凶规则。
 
 use crate::{CyclicRing, Element, InvalidIndex, SexagenaryCycle};
+use core::{fmt, str::FromStr};
+
+/// 输出采用表的精确中文名称，与 [`FromStr`] 的输入一致。
+impl fmt::Display for Nayin {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.name())
+    }
+}
+
+/// 只接受 [`Nayin::name`] 的采用用字，不接受文献异写或拼音代码。
+impl FromStr for Nayin {
+    type Err = crate::ParseError;
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        Self::ALL
+            .into_iter()
+            .find(|value| value.name() == input)
+            .ok_or(Self::Err::InvalidNayin)
+    }
+}
 
 /// 三十种纳音身份，按甲子乙丑起的干支配对顺序编号。
 ///
@@ -126,7 +146,7 @@ impl Nayin {
         self as u8
     }
 
-    /// 中文显示名称，不作为 Serde 机器代码或自动解析别名。
+    /// 精确中文显示与解析名称，不作为 Serde 机器代码。
     pub const fn name(self) -> &'static str {
         match self {
             Self::HaiZhongJin => "海中金",

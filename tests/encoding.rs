@@ -10,7 +10,50 @@ use serde_json::{Value, json};
 fn fixture() -> Value {
     let value: Value = serde_json::from_str(include_str!("fixtures/encoding-v2.json")).unwrap();
     assert_eq!(value["schema_version"], 2);
+    assert_frozen_ganzhi_pairs(&value);
     value
+}
+
+fn assert_frozen_ganzhi_pairs(fixture: &Value) {
+    // Independent code lists define the sixty-pair sequence, not production indexing or decoding.
+    let stems: [&str; 10] = [
+        "Jia", "Yi", "Bing", "Ding", "Wu", "Ji", "Geng", "Xin", "Ren", "Gui",
+    ];
+    let branches: [&str; 12] = [
+        "Zi", "Chou", "Yin", "Mao", "Chen", "Si", "Wu", "Wei", "Shen", "You", "Xu", "Hai",
+    ];
+    let expected: [[&str; 2]; 60] =
+        core::array::from_fn(|index| [stems[index % 10], branches[index % 12]]);
+    let pairs = fixture["Ganzhi"]
+        .as_array()
+        .expect("Ganzhi must contain the complete frozen sixty-pair sequence");
+    assert_eq!(pairs.len(), expected.len());
+    for (index, (pair, expected)) in pairs.iter().zip(expected).enumerate() {
+        assert_eq!(*pair, json!(expected), "frozen Ganzhi pair {index}");
+    }
+}
+
+#[test]
+fn frozen_ganzhi_rejects_missing_reduced_repeated_and_reordered_samples() {
+    for mutation in 0..4 {
+        let mut corrupted = fixture();
+        if mutation == 0 {
+            corrupted.as_object_mut().unwrap().remove("Ganzhi");
+        } else {
+            let pairs = corrupted["Ganzhi"].as_array_mut().unwrap();
+            match mutation {
+                1 => {
+                    pairs.pop();
+                }
+                2 => pairs[59] = pairs[0].clone(),
+                _ => pairs.swap(0, 1),
+            }
+        }
+        assert!(
+            std::panic::catch_unwind(|| assert_frozen_ganzhi_pairs(&corrupted)).is_err(),
+            "frozen Ganzhi mutation {mutation} was not detected"
+        );
+    }
 }
 
 fn check<T: Serialize + DeserializeOwned + PartialEq + core::fmt::Debug>(key: &str, values: &[T]) {
@@ -192,50 +235,23 @@ fn hidden_stems_match_current_optional_fields_and_reject_invalid_pairs() {
 }
 
 mod support;
-use serde_test::{
-    Compact, Configure, Token, assert_de_tokens, assert_de_tokens_error, assert_tokens,
-};
+use serde_test::{Compact, Configure, Token, assert_de_tokens_error, assert_tokens};
 use support::VariantModel;
 
-fn check_model<T: Serialize + DeserializeOwned + Copy + PartialEq + core::fmt::Debug>(
+fn check_model<
+    T: Serialize + DeserializeOwned + Copy + PartialEq + core::fmt::Debug,
+    const N: usize,
+>(
     name: &'static str,
-    cases: &[(T, &'static str)],
+    cases: &[(T, &'static str); N],
     expected: &Value,
 ) {
     let codes = expected.as_array().expect("frozen codes must be an array");
     assert_eq!(cases.len(), codes.len());
-    for (index, ((value, code), frozen)) in cases.iter().zip(codes).enumerate() {
+    for ((_, code), frozen) in cases.iter().zip(codes) {
         assert_eq!(frozen, code);
-        let index = u32::try_from(index).unwrap();
-        assert_eq!(value.serialize(VariantModel).unwrap(), (name, index, *code));
-        assert_tokens(
-            &(*value).compact(),
-            &[Token::UnitVariant {
-                name,
-                variant: code,
-            }],
-        );
-        for identifier in [
-            Token::U32(index),
-            Token::U64(u64::from(index)),
-            Token::Str(code),
-            Token::BorrowedStr(code),
-            Token::Bytes(code.as_bytes()),
-            Token::BorrowedBytes(code.as_bytes()),
-        ] {
-            assert_de_tokens(
-                &(*value).compact(),
-                &[Token::Enum { name }, identifier, Token::Unit],
-            );
-        }
-        assert_de_tokens(&(*value).readable(), &[Token::Str(code)]);
-        // 可读格式统一拒绝旧 unit 对象输入。
-        let object = json!({*code: null});
-        assert!(serde_json::from_value::<T>(object.clone()).is_err());
-        assert!(serde_json::from_str::<T>(&object.to_string()).is_err());
-        assert!(serde_json::from_value::<T>(json!({*code: 1})).is_err());
-        assert!(serde_json::from_str::<T>(&format!(r#"{{"{code}":null,"{code}":null}}"#)).is_err());
     }
+    support::assert_enum_contract(name, cases, support::IdentifierProfile { bytes: true });
     let len = u32::try_from(cases.len()).unwrap();
     for index in [u64::from(len), 255, 256, u64::MAX] {
         assert_de_tokens_error::<Compact<T>>(
@@ -247,16 +263,6 @@ fn check_model<T: Serialize + DeserializeOwned + Copy + PartialEq + core::fmt::D
         &[Token::Enum { name }, Token::Str(cases[0].1), Token::U8(1)],
         "invalid type: integer `1`, expected unit",
     );
-    for invalid in [
-        json!(0),
-        json!("unknown"),
-        json!({}),
-        json!(null),
-        json!([]),
-    ] {
-        assert!(serde_json::from_value::<T>(invalid.clone()).is_err());
-        assert!(serde_json::from_str::<T>(&invalid.to_string()).is_err());
-    }
 }
 
 #[test]

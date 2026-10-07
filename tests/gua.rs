@@ -18,6 +18,21 @@ const CASES: [(Trigram, &str, [Primitive; 3]); 8] = [
     (Trigram::Qian, "乾", [Yang, Yang, Yang]),
 ];
 
+// Positions are an independent bounded domain, not expected values from production ALL.
+const TRIGRAM_POSITIONS: [TrigramPosition; 3] = [
+    TrigramPosition::First,
+    TrigramPosition::Second,
+    TrigramPosition::Third,
+];
+const HEXAGRAM_POSITIONS: [HexagramPosition; 6] = [
+    HexagramPosition::First,
+    HexagramPosition::Second,
+    HexagramPosition::Third,
+    HexagramPosition::Fourth,
+    HexagramPosition::Fifth,
+    HexagramPosition::Sixth,
+];
+
 // 编译时调用，避免只在运行时验证后误称接口支持 const。
 const TAI: Hexagram = Hexagram::from_trigrams(Trigram::Qian, Trigram::Kun);
 const CONST_LINES: [Primitive; 6] = TAI
@@ -99,6 +114,8 @@ fn sixty_four_combinations_have_independent_array_shapes() {
 
 #[test]
 fn all_u8_inputs_are_checked_without_wraparound() {
+    assert_eq!(TrigramPosition::ALL, TRIGRAM_POSITIONS);
+    assert_eq!(HexagramPosition::ALL, HEXAGRAM_POSITIONS);
     for input in 0..=u8::MAX {
         let index = usize::from(input);
         assert_eq!(
@@ -117,29 +134,23 @@ fn all_u8_inputs_are_checked_without_wraparound() {
         );
         assert_eq!(
             TrigramPosition::try_from(input),
-            TrigramPosition::ALL
-                .get(index)
-                .copied()
-                .ok_or(InvalidIndex {
-                    index: input,
-                    upper_bound: 3
-                })
+            TRIGRAM_POSITIONS.get(index).copied().ok_or(InvalidIndex {
+                index: input,
+                upper_bound: 3
+            })
         );
         assert_eq!(
             HexagramPosition::try_from(input),
-            HexagramPosition::ALL
-                .get(index)
-                .copied()
-                .ok_or(InvalidIndex {
-                    index: input,
-                    upper_bound: 6
-                })
+            HEXAGRAM_POSITIONS.get(index).copied().ok_or(InvalidIndex {
+                index: input,
+                upper_bound: 6
+            })
         );
     }
-    for (expected, value) in (0_u8..3).zip(TrigramPosition::ALL) {
+    for (expected, value) in (0_u8..3).zip(TRIGRAM_POSITIONS) {
         assert_eq!(value.index(), expected);
     }
-    for (expected, value) in (0_u8..6).zip(HexagramPosition::ALL) {
+    for (expected, value) in (0_u8..6).zip(HEXAGRAM_POSITIONS) {
         assert_eq!(value.index(), expected);
     }
 }
@@ -153,7 +164,7 @@ fn all_line_queries_updates_and_transformations_match_arrays() {
         assert_eq!(value.complement().lines(), lines.map(Primitive::invert));
         assert_eq!(value.reverse_lines().reverse_lines(), value);
         assert_eq!(value.complement().complement(), value);
-        for p in TrigramPosition::ALL {
+        for p in TRIGRAM_POSITIONS {
             let i = usize::from(p.index());
             assert_eq!(value.line(p), lines[i]);
             let mut changed = lines;
@@ -163,7 +174,7 @@ fn all_line_queries_updates_and_transformations_match_arrays() {
             for polarity in [Yin, Yang] {
                 changed[i] = polarity;
                 assert_eq!(value.with_line(p, polarity).lines(), changed);
-                for q in TrigramPosition::ALL {
+                for q in TRIGRAM_POSITIONS {
                     if p != q {
                         assert_eq!(
                             value.with_line(p, polarity).with_line(q, polarity.invert()),
@@ -182,7 +193,7 @@ fn all_line_queries_updates_and_transformations_match_arrays() {
         assert_eq!(value.complement().lines(), lines.map(Primitive::invert));
         assert_eq!(value.reverse_lines().reverse_lines(), value);
         assert_eq!(value.complement().complement(), value);
-        for p in HexagramPosition::ALL {
+        for p in HEXAGRAM_POSITIONS {
             let i = usize::from(p.index());
             assert_eq!(value.line(p), lines[i]);
             let mut changed = lines;
@@ -192,7 +203,7 @@ fn all_line_queries_updates_and_transformations_match_arrays() {
             for polarity in [Yin, Yang] {
                 changed[i] = polarity;
                 assert_eq!(value.with_line(p, polarity).lines(), changed);
-                for q in HexagramPosition::ALL {
+                for q in HEXAGRAM_POSITIONS {
                     if p != q {
                         assert_eq!(
                             value.with_line(p, polarity).with_line(q, polarity.invert()),

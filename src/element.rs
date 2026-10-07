@@ -1,5 +1,7 @@
 //! 五行及有向生克关系。
 
+use core::{fmt, str::FromStr};
+
 /// 五行 (木、火、土、金、水)
 /// 遵循模 5 循环顺生次序：木(0) -> 火(1) -> 土(2) -> 金(3) -> 水(4)
 #[repr(u8)]
@@ -36,6 +38,17 @@ pub enum ElementRelation {
 }
 
 impl Element {
+    /// 精确中文名称；机器编码仍使用 Serde 代码。
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::Wood => "木",
+            Self::Fire => "火",
+            Self::Earth => "土",
+            Self::Metal => "金",
+            Self::Water => "水",
+        }
+    }
+
     /// 全部五行，按索引对应的相生顺序排列：木、火、土、金、水。
     pub const ALL: [Self; 5] = [
         Self::Wood,
@@ -93,6 +106,25 @@ impl Element {
             4 => ElementRelation::GeneratedBy, // 目标生我
             _ => unreachable!(),
         }
+    }
+}
+
+/// 输出精确中文名称，与 [`FromStr`] 的输入一致。
+impl fmt::Display for Element {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.name())
+    }
+}
+
+/// 只接受精确中文五行名，不裁剪空白或接受别名。
+impl FromStr for Element {
+    type Err = crate::ParseError;
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        Self::ALL
+            .into_iter()
+            .find(|value| value.name() == input)
+            .ok_or(Self::Err::InvalidElement)
     }
 }
 

@@ -96,6 +96,8 @@ assert_eq!(five, FiveCombination::JiaJi);
 assert_eq!(five.partner_of(Stem::Jia), Some(Stem::Ji));
 assert_eq!(five.partner_of(Stem::Yi), None);
 assert_eq!(five.element(), Element::Earth);
+assert_eq!(Stem::Jia.five_combination_partner(), Stem::Ji);
+assert_eq!(Branch::Zi.six_combination_partner(), Branch::Chou);
 
 let three = Branch::Shen.three_combination();
 assert_eq!(three.members(), [Branch::Zi, Branch::Chen, Branch::Shen]);
@@ -129,11 +131,18 @@ assert_eq!((gou.lower(), gou.upper()), (Trigram::Xun, Trigram::Qian));
 ## 接口约定
 
 - **索引与周期**：`TryFrom<u8>` 严格拒绝越界值；`CyclicRing::from_index()` 按周期回绕，`offset()` 支持全部 `i32` 正负位移。
-- **中文文本**：`Stem`、`Branch`、`SexagenaryCycle` 的 `FromStr` 仅接受精确名称，`Display` 输出中文。`ParseError` 区分格式、名称和非法配对；不裁剪空白或接受别名。
+- **中文文本**：`Primitive`、`Element`、`Stem`、`Branch`、`SexagenaryCycle`、`Trigram`、`Xun`、`Nayin` 的 `FromStr` 仅接受精确名称，`Display` 输出相同中文。旬名包含“旬”字（如“甲子旬”），纳音使用采用表中的用字。`ParseError` 区分各类名称、干支格式和非法配对；不裁剪空白或接受别名。
+- **整数步进**：`Stem`、`Branch`、`Growth`、`SexagenaryCycle`、`Xun` 支持 `+ i32`、`- i32`、`+= i32`、`-= i32`，正负位移及 `i32::MIN/MAX` 均按周期回绕。值间的有向距离使用 `from.distance_to(to)`。
 - **关系方向**：十神、生克、刑与循环距离保留参数方向。
 - **运行环境**：默认无特性，唯一可选生产特性为 `serde`，启用后仍支持 `no_std`。
 
 中文解析不分配堆内存。`Display` 可写入 `core::fmt::Write`；调用 `to_string()` 的分配发生在应用侧。
+
+### 本次接口变更
+
+- 新增五行、阴阳、八卦、旬和纳音的中文 `Display`／`FromStr`，五行和阴阳新增 `name()`，阴阳新增 `ALL`；机器编码不变。解析错误新增对应的 `ParseError` 分支。
+- 移除天干、地支的值减值操作：原 `a - b` 调用迁移为 `b.distance_to(a)`，保持原来的距离方向。整数减法只表示反向步进；五种周期值提供一致的整数加减及赋值操作。
+- 天干新增 `five_combination_partner()`，地支新增 `six_combination_partner()`、`six_clash_partner()`、`six_harm_partner()`、`six_break_partner()`；直接返回另一成员，沿用现有固定表及体系限制。
 
 <details>
 <summary>Serde 编码与严格解码</summary>

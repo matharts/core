@@ -58,6 +58,39 @@ impl Growth {
     ];
 }
 
+/// 向前步进整数位移；与 [`CyclicRing::offset`] 相同。
+impl core::ops::Add<i32> for Growth {
+    type Output = Self;
+    fn add(self, rhs: i32) -> Self::Output {
+        self.offset(rhs)
+    }
+}
+
+/// 向后步进整数位移；支持全部 `i32`，包括 `i32::MIN`。
+impl core::ops::Sub<i32> for Growth {
+    type Output = Self;
+    fn sub(self, rhs: i32) -> Self::Output {
+        Self::from_index(crate::math::ring::wrap(
+            i64::from(self.index()) - i64::from(rhs),
+            Self::MODULUS,
+        ))
+    }
+}
+
+/// 将整数位移的向前步进结果写回自身。
+impl core::ops::AddAssign<i32> for Growth {
+    fn add_assign(&mut self, rhs: i32) {
+        *self = *self + rhs;
+    }
+}
+
+/// 将整数位移的向后步进结果写回自身。
+impl core::ops::SubAssign<i32> for Growth {
+    fn sub_assign(&mut self, rhs: i32) {
+        *self = *self - rhs;
+    }
+}
+
 impl CyclicRing for Growth {
     const MODULUS: core::num::NonZeroU8 = core::num::NonZeroU8::new(12).unwrap();
 

@@ -1,5 +1,7 @@
 //! 阴阳值；排序仅表示固定编码顺序。
 
+use core::{fmt, str::FromStr};
+
 /// 基础二元极性（阴阳原语）
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -13,6 +15,17 @@ pub enum Primitive {
 }
 
 impl Primitive {
+    /// 全部阴阳值，按固定编码顺序排列。
+    pub const ALL: [Self; 2] = [Self::Yang, Self::Yin];
+
+    /// 精确中文名称；机器编码仍使用 Serde 代码。
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::Yang => "阳",
+            Self::Yin => "阴",
+        }
+    }
+
     /// 取反（阴阳互换）
     #[inline]
     pub const fn invert(self) -> Self {
@@ -32,6 +45,25 @@ impl Primitive {
     #[inline]
     pub const fn is_yin(self) -> bool {
         matches!(self, Self::Yin)
+    }
+}
+
+/// 输出精确中文名称，与 [`FromStr`] 的输入一致。
+impl fmt::Display for Primitive {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.name())
+    }
+}
+
+/// 只接受精确中文阴阳名，不裁剪空白或接受别名。
+impl FromStr for Primitive {
+    type Err = crate::ParseError;
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        Self::ALL
+            .into_iter()
+            .find(|value| value.name() == input)
+            .ok_or(Self::Err::InvalidPrimitive)
     }
 }
 

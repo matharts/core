@@ -1,7 +1,7 @@
 //! 严格构造、周期运算、固定属性及当前入口的公共契约。
 use core::num::NonZeroU8;
 use matharts_core::{
-    Branch, CyclicRing, Element, ElementRelation, Growth, Primitive, SexagenaryCycle, Stem,
+    Branch, CyclicRing, Element, ElementRelation, Growth, Primitive, SexagenaryCycle, Stem, Xun,
     checked_forward_distance, forward_distance,
 };
 use proptest::prelude::*;
@@ -65,10 +65,10 @@ fn zero_period_is_rejected_and_distance_is_directed() {
 #[test]
 fn primitive_and_elements_match_fixed_attributes() {
     use Element::{Earth, Fire, Metal, Water, Wood};
-    let stems = [
+    let stems: [Element; 10] = [
         Wood, Wood, Fire, Fire, Earth, Earth, Metal, Metal, Water, Water,
     ];
-    let branches = [
+    let branches: [Element; 12] = [
         Water, Earth, Wood, Wood, Earth, Fire, Fire, Earth, Metal, Metal, Earth, Water,
     ];
     for (index, expected) in (0_u8..10).zip(stems) {
@@ -96,7 +96,7 @@ fn all_element_relations_have_the_documented_direction() {
     use ElementRelation::{
         GeneratedBy as B, Generates as G, OvercomeBy as O, Overcomes as K, Same as S,
     };
-    let expected = [
+    let expected: [[ElementRelation; 5]; 5] = [
         [S, G, K, O, B],
         [B, S, G, K, O],
         [O, B, S, G, K],
@@ -166,57 +166,134 @@ fn branch_opposites_match_fixed_pairs() {
 }
 
 #[test]
-fn addition_handles_signed_extremes_and_wraps_in_both_directions() {
-    let deltas = [
-        i32::MIN,
-        i32::MIN + 1,
-        -121,
-        -12,
-        -10,
-        -1,
-        0,
-        1,
-        10,
-        12,
-        121,
-        i32::MAX - 1,
-        i32::MAX,
-    ];
-    for delta in deltas {
-        for (index, stem) in (0_u8..10).zip(STEMS) {
-            let expected_index = (i64::from(index) + i64::from(delta)).rem_euclid(10);
-            let expected = STEMS[usize::try_from(expected_index).unwrap()];
-            assert_eq!(stem + delta, expected, "{stem:?} + {delta}");
-        }
-        for (index, branch) in (0_u8..12).zip(BRANCHES) {
-            let expected_index = (i64::from(index) + i64::from(delta)).rem_euclid(12);
-            let expected = BRANCHES[usize::try_from(expected_index).unwrap()];
-            assert_eq!(branch + delta, expected, "{branch:?} + {delta}");
-        }
-    }
-}
-
-#[test]
-fn subtraction_measures_forward_distance_from_rhs_for_every_pair() {
+fn distance_to_preserves_direction_for_every_pair() {
     for (left_index, left) in (0_u8..10).zip(STEMS) {
         for (right_index, right) in (0_u8..10).zip(STEMS) {
             let expected = (i16::from(left_index) - i16::from(right_index)).rem_euclid(10);
-            assert_eq!(i16::from(left - right), expected, "{left:?} - {right:?}");
+            assert_eq!(
+                i16::from(right.distance_to(left)),
+                expected,
+                "{right:?} to {left:?}"
+            );
         }
     }
     for (left_index, left) in (0_u8..12).zip(BRANCHES) {
         for (right_index, right) in (0_u8..12).zip(BRANCHES) {
             let expected = (i16::from(left_index) - i16::from(right_index)).rem_euclid(12);
-            assert_eq!(i16::from(left - right), expected, "{left:?} - {right:?}");
+            assert_eq!(
+                i16::from(right.distance_to(left)),
+                expected,
+                "{right:?} to {left:?}"
+            );
         }
+    }
+}
+
+fn check_integer_steps<T>(values: &[T], delta: i32)
+where
+    T: CyclicRing
+        + core::fmt::Debug
+        + core::ops::Add<i32, Output = T>
+        + core::ops::Sub<i32, Output = T>
+        + core::ops::AddAssign<i32>
+        + core::ops::SubAssign<i32>,
+{
+    let period = i64::try_from(values.len()).unwrap();
+    for (index, &value) in values.iter().enumerate() {
+        let index = i64::try_from(index).unwrap();
+        let forward =
+            values[usize::try_from((index + i64::from(delta)).rem_euclid(period)).unwrap()];
+        let backward =
+            values[usize::try_from((index - i64::from(delta)).rem_euclid(period)).unwrap()];
+        assert_eq!(value.offset(delta), forward);
+        assert_eq!(value + delta, forward);
+        assert_eq!(value - delta, backward);
+        let mut assigned = value;
+        assigned += delta;
+        assert_eq!(assigned, forward);
+        assigned -= delta;
+        assert_eq!(assigned, value);
+        assigned -= delta;
+        assert_eq!(assigned, backward);
+        assigned += delta;
+        assert_eq!(assigned, value);
+    }
+}
+
+fn check_all_integer_steps(delta: i32) {
+    check_integer_steps(&STEMS, delta);
+    check_integer_steps(&BRANCHES, delta);
+    check_integer_steps(
+        &[
+            Growth::ChangSheng,
+            Growth::MuYu,
+            Growth::GuanDai,
+            Growth::LinGuan,
+            Growth::DiWang,
+            Growth::Shuai,
+            Growth::Bing,
+            Growth::Si,
+            Growth::Mu,
+            Growth::Jue,
+            Growth::Tai,
+            Growth::Yang,
+        ],
+        delta,
+    );
+    check_integer_steps(
+        &[
+            Xun::JiaZi,
+            Xun::JiaXu,
+            Xun::JiaShen,
+            Xun::JiaWu,
+            Xun::JiaChen,
+            Xun::JiaYin,
+        ],
+        delta,
+    );
+    // 独立的两个周期计数器构造合法甲子序列；不调用被测步进生成预期。
+    let ganzhi: [SexagenaryCycle; 60] =
+        core::array::from_fn(|i| SexagenaryCycle::new(STEMS[i % 10], BRANCHES[i % 12]).unwrap());
+    check_integer_steps(&ganzhi, delta);
+}
+
+#[test]
+fn all_five_cycle_types_add_subtract_and_assign_at_signed_boundaries() {
+    for delta in [
+        i32::MIN,
+        i32::MIN + 1,
+        -121,
+        -60,
+        -12,
+        -10,
+        -6,
+        -1,
+        0,
+        1,
+        6,
+        10,
+        12,
+        60,
+        121,
+        i32::MAX - 1,
+        i32::MAX,
+    ] {
+        check_all_integer_steps(delta);
+    }
+}
+
+proptest! {
+    #[test]
+    fn all_five_cycle_types_handle_arbitrary_signed_steps(delta in any::<i32>()) {
+        check_all_integer_steps(delta);
     }
 }
 
 #[test]
 fn all_sixty_values_have_consistent_xun_membership() {
     use Branch::{Chen, Chou, Hai, Mao, Shen, Si, Wei, Wu, Xu, Yin, You, Zi};
-    let leaders = [Zi, Xu, Shen, Wu, Chen, Yin];
-    let missing = [
+    let leaders: [Branch; 6] = [Zi, Xu, Shen, Wu, Chen, Yin];
+    let missing: [(Branch, Branch); 6] = [
         (Xu, Hai),
         (Shen, You),
         (Wu, Wei),

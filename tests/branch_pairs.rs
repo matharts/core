@@ -28,6 +28,23 @@ const BREAK: [(SixBreak, &str, [Branch; 2]); 6] = [
     (SixBreak::WeiXu, "WeiXu", [Branch::Wei, Branch::Xu]),
 ];
 
+#[test]
+fn direct_partners_cover_every_branch_using_independent_pairs() {
+    fn check(query: fn(Branch) -> Branch, pairs: [[Branch; 2]; 6]) {
+        let mut covered = [0; 12];
+        for [a, b] in pairs {
+            assert_eq!(query(a), b);
+            assert_eq!(query(b), a);
+            covered[a as usize] += 1;
+            covered[b as usize] += 1;
+        }
+        assert_eq!(covered, [1; 12]);
+    }
+    check(Branch::six_clash_partner, CLASH.map(|case| case.2));
+    check(Branch::six_harm_partner, HARM.map(|case| case.2));
+    check(Branch::six_break_partner, BREAK.map(|case| case.2));
+}
+
 macro_rules! test_pairs {
     ($test:ident, $ty:ident, $cases:ident, $query:ident, $predicate:ident) => {
         #[test]
@@ -162,13 +179,11 @@ mod encoding {
     use super::*;
     use serde::{Serialize, de::DeserializeOwned};
     use serde_json::{Value, json};
-    use serde_test::{
-        Compact, Configure, Token, assert_de_tokens, assert_de_tokens_error, assert_tokens,
-    };
+    use serde_test::{Compact, Token, assert_de_tokens_error};
 
     fn check<T: Serialize + DeserializeOwned + Copy + Eq + core::fmt::Debug>(
         name: &'static str,
-        cases: &[(T, &'static str, [Branch; 2])],
+        cases: &[(T, &'static str, [Branch; 2]); 6],
         other_codes: &[&str],
     ) {
         let f: Value = serde_json::from_str(include_str!("fixtures/branch-pairs-v1.json")).unwrap();
@@ -184,59 +199,19 @@ mod encoding {
         let rows = f[name].as_array().unwrap();
         assert_eq!(rows.len(), 6);
         assert_eq!(cases.len(), 6);
-        for (index, ((group, code, members), row)) in cases.iter().zip(rows).enumerate() {
+        for (index, ((_, code, members), row)) in cases.iter().zip(rows).enumerate() {
             assert_eq!(row, &json!({"index":index,"code":code,"members":members}));
-            assert_eq!(serde_json::to_value(group).unwrap(), row["code"]);
-            assert_eq!(
-                serde_json::from_value::<T>(row["code"].clone()).unwrap(),
-                *group
-            );
-            assert_eq!(
-                serde_json::from_str::<T>(&format!("\"{code}\"")).unwrap(),
-                *group
-            );
-            let index = u32::try_from(index).unwrap();
-            assert_eq!(
-                group.serialize(support::VariantModel).unwrap(),
-                (name, index, *code)
-            );
-            assert_tokens(
-                &(*group).compact(),
-                &[Token::UnitVariant {
-                    name,
-                    variant: code,
-                }],
-            );
-            assert_tokens(
-                &(*group).readable(),
-                &[Token::UnitVariant {
-                    name,
-                    variant: code,
-                }],
-            );
-            assert_de_tokens(&(*group).readable(), &[Token::Str(code)]);
-            for id in [
-                Token::U32(index),
-                Token::U64(u64::from(index)),
-                Token::Str(code),
-                Token::Bytes(code.as_bytes()),
-            ] {
-                assert_de_tokens(
-                    &(*group).compact(),
-                    &[Token::Enum { name }, id, Token::Unit],
-                );
-            }
-            for value in [json!({*code:null}), json!({*code:1}), json!([code])] {
-                assert!(serde_json::from_value::<T>(value.clone()).is_err());
-                assert!(serde_json::from_str::<T>(&value.to_string()).is_err());
-            }
         }
+        support::assert_enum_contract(
+            name,
+            &cases.map(|case| (case.0, case.1)),
+            support::IdentifierProfile { bytes: true },
+        );
         for value in negatives.as_array().unwrap() {
-            assert!(serde_json::from_value::<T>(value.clone()).is_err());
-            assert!(serde_json::from_str::<T>(&value.to_string()).is_err());
+            support::assert_json_rejected::<T>(value);
         }
         for code in other_codes {
-            assert!(serde_json::from_value::<T>(json!(code)).is_err());
+            support::assert_json_rejected::<T>(&json!(code));
         }
         for index in [6, 255, 256, u64::MAX] {
             assert_de_tokens_error::<Compact<T>>(

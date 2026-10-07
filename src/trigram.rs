@@ -1,6 +1,7 @@
 //! 八卦的三爻结构；数组从下到上，位编码最低位代表最下爻。
 
 use crate::{InvalidIndex, Primitive};
+use core::{fmt, str::FromStr};
 
 /// 八种三爻结构。位编码阳为1、阴为0，不是先天、后天或文王卦序。
 ///
@@ -35,6 +36,25 @@ pub enum Trigram {
     /// 乾卦。
     Qian = 7,
 }
+/// 输出精确中文名称，与 [`FromStr`] 的输入一致。
+impl fmt::Display for Trigram {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.name())
+    }
+}
+
+/// 只接受 [`Trigram::name`] 的精确名称，不接受“乾卦”等别名。
+impl FromStr for Trigram {
+    type Err = crate::ParseError;
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        Self::ALL
+            .into_iter()
+            .find(|value| value.name() == input)
+            .ok_or(Self::Err::InvalidTrigram)
+    }
+}
+
 impl Trigram {
     /// 全部八卦，按 bits 升序排列，仅作技术遍历顺序。
     pub const ALL: [Self; 8] = [

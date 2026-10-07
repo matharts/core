@@ -72,6 +72,12 @@ fn fixed_groups_partition_domains_and_check_every_partner_and_membership() {
             stems[stem as usize] += 1;
             assert_eq!(FiveCombination::from_stem(stem), group);
             assert_eq!(stem.five_combination(), group);
+            let expected = if stem == members[0] {
+                members[1]
+            } else {
+                members[0]
+            };
+            assert_eq!(stem.five_combination_partner(), expected);
         }
     }
     for (group, _, members) in SIX {
@@ -91,6 +97,12 @@ fn fixed_groups_partition_domains_and_check_every_partner_and_membership() {
             branches[branch as usize] += 1;
             assert_eq!(SixCombination::from_branch(branch), group);
             assert_eq!(branch.six_combination(), group);
+            let expected = if branch == members[0] {
+                members[1]
+            } else {
+                members[0]
+            };
+            assert_eq!(branch.six_combination_partner(), expected);
         }
     }
     assert_eq!(stems, [1; 10]);
@@ -193,9 +205,7 @@ mod encoding {
     use super::*;
     use serde::{Serialize, de::DeserializeOwned};
     use serde_json::{Value, json};
-    use serde_test::{
-        Compact, Configure, Token, assert_de_tokens, assert_de_tokens_error, assert_tokens,
-    };
+    use serde_test::{Compact, Token, assert_de_tokens_error};
 
     fn fixture() -> Value {
         let f: Value = serde_json::from_str(include_str!("fixtures/pair-groups-v1.json")).unwrap();
@@ -211,64 +221,21 @@ mod encoding {
         f
     }
 
-    fn check<T: Serialize + DeserializeOwned + Copy + Eq + core::fmt::Debug>(
+    fn check<T: Serialize + DeserializeOwned + Copy + Eq + core::fmt::Debug, const N: usize>(
         name: &'static str,
-        cases: &[(T, &'static str)],
+        cases: &[(T, &'static str); N],
         rows: &[Value],
         invalid: &[Value],
     ) {
         assert_eq!(rows.len(), cases.len());
-        for (index, ((group, code), row)) in cases.iter().zip(rows).enumerate() {
+        for (index, ((_, code), row)) in cases.iter().zip(rows).enumerate() {
             let index = u32::try_from(index).unwrap();
             assert_eq!(row["index"], index);
             assert_eq!(row["code"], *code);
-            assert_eq!(serde_json::to_value(group).unwrap(), row["code"]);
-            assert_eq!(
-                serde_json::from_value::<T>(row["code"].clone()).unwrap(),
-                *group
-            );
-            assert_eq!(
-                serde_json::from_str::<T>(&format!("\"{code}\"")).unwrap(),
-                *group
-            );
-            assert_eq!(
-                group.serialize(support::VariantModel).unwrap(),
-                (name, index, *code)
-            );
-            assert_tokens(
-                &(*group).compact(),
-                &[Token::UnitVariant {
-                    name,
-                    variant: code,
-                }],
-            );
-            assert_tokens(
-                &(*group).readable(),
-                &[Token::UnitVariant {
-                    name,
-                    variant: code,
-                }],
-            );
-            assert_de_tokens(&(*group).readable(), &[Token::Str(code)]);
-            for identifier in [
-                Token::U32(index),
-                Token::U64(u64::from(index)),
-                Token::Str(code),
-                Token::Bytes(code.as_bytes()),
-            ] {
-                assert_de_tokens(
-                    &(*group).compact(),
-                    &[Token::Enum { name }, identifier, Token::Unit],
-                );
-            }
-            for wrong_shape in [json!({*code:null}), json!({*code:1}), json!([code])] {
-                assert!(serde_json::from_value::<T>(wrong_shape.clone()).is_err());
-                assert!(serde_json::from_str::<T>(&wrong_shape.to_string()).is_err());
-            }
         }
+        support::assert_enum_contract(name, cases, support::IdentifierProfile { bytes: true });
         for value in invalid {
-            assert!(serde_json::from_value::<T>(value.clone()).is_err());
-            assert!(serde_json::from_str::<T>(&value.to_string()).is_err());
+            support::assert_json_rejected::<T>(value);
         }
         let count = cases.len();
         for index in [u64::try_from(count).unwrap(), 255, 256, u64::MAX] {

@@ -1,6 +1,26 @@
 //! 六十甲子中的六旬身份与成员集合，不解释空亡的实际作用。
 
 use crate::{Branch, CyclicRing, InvalidIndex, SexagenaryCycle};
+use core::{fmt, str::FromStr};
+
+/// 输出带“旬”字的精确中文名称，与 [`FromStr`] 的输入一致。
+impl fmt::Display for Xun {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.name())
+    }
+}
+
+/// 只接受 [`Xun::name`] 的完整名称；“甲子”是干支名，不是“甲子旬”的别名。
+impl FromStr for Xun {
+    type Err = crate::ParseError;
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        Self::ALL
+            .into_iter()
+            .find(|value| value.name() == input)
+            .ok_or(Self::Err::InvalidXun)
+    }
+}
 
 /// 由甲起始的十个连续干支组成的一旬。
 ///
@@ -89,6 +109,39 @@ impl Xun {
     pub fn is_void_branch(self, branch: Branch) -> bool {
         let (first, second) = self.void_branches();
         branch == first || branch == second
+    }
+}
+
+/// 向前步进整数位移；与 [`CyclicRing::offset`] 相同。
+impl core::ops::Add<i32> for Xun {
+    type Output = Self;
+    fn add(self, rhs: i32) -> Self::Output {
+        self.offset(rhs)
+    }
+}
+
+/// 向后步进整数位移；支持全部 `i32`，包括 `i32::MIN`。
+impl core::ops::Sub<i32> for Xun {
+    type Output = Self;
+    fn sub(self, rhs: i32) -> Self::Output {
+        Self::from_index(crate::math::ring::wrap(
+            i64::from(self.index()) - i64::from(rhs),
+            Self::MODULUS,
+        ))
+    }
+}
+
+/// 将整数位移的向前步进结果写回自身。
+impl core::ops::AddAssign<i32> for Xun {
+    fn add_assign(&mut self, rhs: i32) {
+        *self = *self + rhs;
+    }
+}
+
+/// 将整数位移的向后步进结果写回自身。
+impl core::ops::SubAssign<i32> for Xun {
+    fn sub_assign(&mut self, rhs: i32) {
+        *self = *self - rhs;
     }
 }
 

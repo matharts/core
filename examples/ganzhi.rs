@@ -24,16 +24,8 @@ fn main() -> Result<(), ParseError> {
     );
     assert_eq!(ganzhi.to_string(), "甲子");
     println!("输入：{ganzhi}");
-    println!(
-        "天干：{stem}，{}{}",
-        primitive_name(stem.primitive()),
-        element_name(stem.element())
-    );
-    println!(
-        "地支：{branch}，{}{}",
-        primitive_name(branch.primitive()),
-        element_name(branch.element())
-    );
+    println!("天干：{stem}，{}{}", stem.primitive(), stem.element());
+    println!("地支：{branch}，{}{}", branch.primitive(), branch.element());
     let five = stem.five_combination();
     let six = branch.six_combination();
     assert_eq!(five, FiveCombination::JiaJi);
@@ -43,6 +35,8 @@ fn main() -> Result<(), ParseError> {
     assert_eq!(five.element(), Element::Earth);
     assert_eq!(five.partner_of(stem), Some(Stem::Ji));
     assert_eq!(six.partner_of(branch), Some(Branch::Chou));
+    assert_eq!(stem.five_combination_partner(), Stem::Ji);
+    assert_eq!(branch.six_combination_partner(), Branch::Chou);
     assert_eq!(five.partner_of(Stem::Yi), None);
     assert_eq!(FiveCombination::from_stems([Stem::Ji, stem]), Some(five));
     assert_eq!(FiveCombination::from_stems([stem; 2]), None);
@@ -52,10 +46,7 @@ fn main() -> Result<(), ParseError> {
     );
     assert_eq!(SixCombination::from_branches([branch, Branch::Yin]), None);
     let [a, b] = five.members();
-    println!(
-        "所属五合组：{a}、{b}；固定对应：{}",
-        element_name(five.element())
-    );
+    println!("所属五合组：{a}、{b}；固定对应：{}", five.element());
     let [a, b] = six.members();
     println!("所属六合组：{a}、{b}");
     show_branch_pairs(branch);
@@ -66,6 +57,9 @@ fn main() -> Result<(), ParseError> {
     let last: SexagenaryCycle = "癸亥".parse()?;
     assert_eq!((next.stem(), next.branch()), (Stem::Yi, Branch::Chou));
     assert_eq!(last.offset(1), ganzhi);
+    assert_eq!(ganzhi + 1, next);
+    assert_eq!(next - 1, ganzhi);
+    assert_eq!(last.distance_to(ganzhi), 1);
     println!(
         "顺进一位：{ganzhi} → {next}；周期回绕：{last} → {}",
         last.offset(1)
@@ -77,20 +71,13 @@ fn main() -> Result<(), ParseError> {
     assert_eq!(xun.name(), "甲子旬");
     assert_eq!((first_void, second_void), (Branch::Xu, Branch::Hai));
     // 这里只查询旬内未出现的两支，不推断命盘中的空亡效应。
-    println!(
-        "所属旬：{}；缺位地支：{first_void}、{second_void}",
-        xun.name()
-    );
+    println!("所属旬：{xun}；缺位地支：{first_void}、{second_void}");
 
     let nayin = ganzhi.nayin();
     assert_eq!(nayin, Nayin::HaiZhongJin);
     assert_eq!(nayin.name(), "海中金");
     assert_eq!(ganzhi.nayin().element(), Element::Metal);
-    println!(
-        "纳音：{}；纳音五行：{}",
-        nayin.name(),
-        element_name(ganzhi.nayin().element())
-    );
+    println!("纳音：{}；纳音五行：{}", nayin, ganzhi.nayin().element());
 
     // 严格输入不会自动 trim、接受拼音别名或修正阴阳不匹配的组合。
     // 固定预期断言在 debug 和 release 下均执行，行为变化会使示例失败。
@@ -130,6 +117,9 @@ fn show_branch_pairs(branch: Branch) {
     assert_eq!(clash.partner_of(branch), Some(Branch::Wu));
     assert_eq!(harm.partner_of(branch), Some(Branch::Wei));
     assert_eq!(breaking.partner_of(branch), Some(Branch::You));
+    assert_eq!(branch.six_clash_partner(), Branch::Wu);
+    assert_eq!(branch.six_harm_partner(), Branch::Wei);
+    assert_eq!(branch.six_break_partner(), Branch::You);
     assert_eq!(SixClash::from_branches([Branch::Wu, branch]), Some(clash));
     assert_eq!(SixHarm::from_branches([Branch::Wei, branch]), Some(harm));
     assert_eq!(
@@ -181,27 +171,6 @@ fn show_branch_groups(branch: Branch) {
         ("三合组", combination.members(), combination.element()),
         ("三会组", meeting.members(), meeting.element()),
     ] {
-        println!(
-            "所属{label}：{a}、{b}、{c}；固定对应：{}",
-            element_name(element)
-        );
-    }
-}
-
-// Primitive 和 Element 暂无中文 Display；展示文案由示例调用方提供。
-fn primitive_name(value: Primitive) -> &'static str {
-    match value {
-        Primitive::Yang => "阳",
-        Primitive::Yin => "阴",
-    }
-}
-
-fn element_name(value: Element) -> &'static str {
-    match value {
-        Element::Wood => "木",
-        Element::Fire => "火",
-        Element::Earth => "土",
-        Element::Metal => "金",
-        Element::Water => "水",
+        println!("所属{label}：{a}、{b}、{c}；固定对应：{element}");
     }
 }

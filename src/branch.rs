@@ -332,6 +332,46 @@ impl Branch {
         crate::SixCombination::from_branch(self)
     }
 
+    /// 六合配对中的另一支；沿用 [`Self::six_combination`] 的固定表，不判断成合。
+    pub const fn six_combination_partner(self) -> Self {
+        let [first, second] = self.six_combination().members();
+        if self as u8 == first as u8 {
+            second
+        } else {
+            first
+        }
+    }
+
+    /// 六冲配对中的另一支；沿用 [`Self::six_clash`] 的固定表，不判断实际作用。
+    pub const fn six_clash_partner(self) -> Self {
+        let [first, second] = self.six_clash().members();
+        if self as u8 == first as u8 {
+            second
+        } else {
+            first
+        }
+    }
+
+    /// 六害配对中的另一支；沿用 [`Self::six_harm`] 的固定表，不判断实际作用。
+    pub const fn six_harm_partner(self) -> Self {
+        let [first, second] = self.six_harm().members();
+        if self as u8 == first as u8 {
+            second
+        } else {
+            first
+        }
+    }
+
+    /// 采用六破表中的另一支；来源及体系限制与 [`Self::six_break`] 相同。
+    pub const fn six_break_partner(self) -> Self {
+        let [first, second] = self.six_break().members();
+        if self as u8 == first as u8 {
+            second
+        } else {
+            first
+        }
+    }
+
     /// 本支所属的完整三合组；成员缺失时也能查询身份，不判断实际成局。
     pub const fn three_combination(self) -> crate::ThreeCombination {
         crate::ThreeCombination::from_branch(self)
@@ -349,6 +389,20 @@ impl Branch {
     }
 }
 
+/// 将整数位移的向前步进结果写回自身。
+impl core::ops::AddAssign<i32> for Branch {
+    fn add_assign(&mut self, rhs: i32) {
+        *self = *self + rhs;
+    }
+}
+
+/// 将整数位移的向后步进结果写回自身。
+impl core::ops::SubAssign<i32> for Branch {
+    fn sub_assign(&mut self, rhs: i32) {
+        *self = *self - rhs;
+    }
+}
+
 impl Add<i32> for Branch {
     type Output = Self;
     #[inline]
@@ -357,23 +411,15 @@ impl Add<i32> for Branch {
     }
 }
 
-/// `a - b` 返回从 `b` 到 `a` 的正向循环距离，取值为 `0..=11`。
-///
-/// 正向按子、丑、寅、卯、辰、巳、午、未、申、酉、戌、亥循环；
-/// 结果不是普通的有符号差值，交换两端可能得到不同距离。
-///
-/// ```
-/// use matharts_core::Branch;
-///
-/// assert_eq!(Branch::Zi - Branch::Hai, 1);
-/// assert_eq!(Branch::Hai - Branch::Zi, 11);
-/// assert_eq!(Branch::Zi - Branch::Zi, 0);
-/// ```
-impl Sub<Branch> for Branch {
-    type Output = u8;
+/// 向后步进整数位移；支持全部 `i32`，包括 `i32::MIN`。
+impl Sub<i32> for Branch {
+    type Output = Self;
     #[inline]
-    fn sub(self, rhs: Branch) -> Self::Output {
-        rhs.distance_to(self)
+    fn sub(self, rhs: i32) -> Self::Output {
+        Self::from_index(crate::math::ring::wrap(
+            i64::from(self.index()) - i64::from(rhs),
+            Self::MODULUS,
+        ))
     }
 }
 

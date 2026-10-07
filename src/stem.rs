@@ -95,6 +95,16 @@ impl Stem {
         crate::FiveCombination::from_stem(self)
     }
 
+    /// 五合配对中的另一干；沿用 [`Self::five_combination`] 的固定表，不判断合化。
+    pub const fn five_combination_partner(self) -> Self {
+        let [first, second] = self.five_combination().members();
+        if self as u8 == first as u8 {
+            second
+        } else {
+            first
+        }
+    }
+
     /// 天干相冲 (甲庚冲、乙辛冲、丙壬冲、丁癸冲)
     ///
     /// # 采用定义与证据状态
@@ -122,6 +132,20 @@ impl Stem {
     }
 }
 
+/// 将整数位移的向前步进结果写回自身。
+impl core::ops::AddAssign<i32> for Stem {
+    fn add_assign(&mut self, rhs: i32) {
+        *self = *self + rhs;
+    }
+}
+
+/// 将整数位移的向后步进结果写回自身。
+impl core::ops::SubAssign<i32> for Stem {
+    fn sub_assign(&mut self, rhs: i32) {
+        *self = *self - rhs;
+    }
+}
+
 impl Add<i32> for Stem {
     type Output = Self;
     #[inline]
@@ -130,23 +154,15 @@ impl Add<i32> for Stem {
     }
 }
 
-/// `a - b` 返回从 `b` 到 `a` 的正向循环距离，取值为 `0..=9`。
-///
-/// 正向按甲、乙、丙、丁、戊、己、庚、辛、壬、癸循环；
-/// 结果不是普通的有符号差值，交换两端可能得到不同距离。
-///
-/// ```
-/// use matharts_core::Stem;
-///
-/// assert_eq!(Stem::Jia - Stem::Gui, 1);
-/// assert_eq!(Stem::Gui - Stem::Jia, 9);
-/// assert_eq!(Stem::Jia - Stem::Jia, 0);
-/// ```
-impl Sub<Stem> for Stem {
-    type Output = u8;
+/// 向后步进整数位移；支持全部 `i32`，包括 `i32::MIN`。
+impl Sub<i32> for Stem {
+    type Output = Self;
     #[inline]
-    fn sub(self, rhs: Stem) -> Self::Output {
-        rhs.distance_to(self)
+    fn sub(self, rhs: i32) -> Self::Output {
+        Self::from_index(crate::math::ring::wrap(
+            i64::from(self.index()) - i64::from(rhs),
+            Self::MODULUS,
+        ))
     }
 }
 

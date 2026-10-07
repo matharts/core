@@ -30,6 +30,16 @@ impl core::error::Error for InvalidGanzhi {}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ParseError {
+    /// 输入不是一个精确的中文五行名。
+    InvalidElement,
+    /// 输入不是一个精确的中文阴阳名。
+    InvalidPrimitive,
+    /// 输入不是一个精确的中文八卦名。
+    InvalidTrigram,
+    /// 输入不是带“旬”字的精确中文六旬名。
+    InvalidXun,
+    /// 输入不是采用表中的精确中文纳音名。
+    InvalidNayin,
     /// 输入不是一个精确的中文天干名。
     InvalidStem,
     /// 输入不是一个精确的中文地支名。
@@ -43,6 +53,11 @@ pub enum ParseError {
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::InvalidElement => f.write_str("expected one exact Chinese element name"),
+            Self::InvalidPrimitive => f.write_str("expected one exact Chinese yin-yang name"),
+            Self::InvalidTrigram => f.write_str("expected one exact Chinese trigram name"),
+            Self::InvalidXun => f.write_str("expected one exact Chinese xun name including 旬"),
+            Self::InvalidNayin => f.write_str("expected one exact adopted Chinese nayin name"),
             Self::InvalidStem => f.write_str("expected one exact Chinese heavenly stem name"),
             Self::InvalidBranch => f.write_str("expected one exact Chinese earthly branch name"),
             Self::InvalidGanzhiFormat => {

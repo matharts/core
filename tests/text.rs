@@ -1,6 +1,9 @@
 //! 中文文本契约：独立预期、严格边界与全部干支配对。
 use core::{error::Error, fmt, fmt::Write};
-use matharts_core::{Branch, CyclicRing, InvalidGanzhi, ParseError, SexagenaryCycle, Stem};
+use matharts_core::{
+    Branch, CyclicRing, Element, InvalidGanzhi, Nayin, ParseError, Primitive, SexagenaryCycle,
+    Stem, Trigram, Xun,
+};
 use proptest::prelude::*;
 
 const STEMS: [(Stem, &str); 10] = [
@@ -37,6 +40,66 @@ const GANZHI: [&str; 60] = [
     "戊子", "己丑", "庚寅", "辛卯", "壬辰", "癸巳", "甲午", "乙未", "丙申", "丁酉", "戊戌", "己亥",
     "庚子", "辛丑", "壬寅", "癸卯", "甲辰", "乙巳", "丙午", "丁未", "戊申", "己酉", "庚戌", "辛亥",
     "壬子", "癸丑", "甲寅", "乙卯", "丙辰", "丁巳", "戊午", "己未", "庚申", "辛酉", "壬戌", "癸亥",
+];
+
+// 身份序列由测试显式定义；生产 ALL 与名称表不能共同生成预期。
+const PRIMITIVES: [Primitive; 2] = [Primitive::Yang, Primitive::Yin];
+const ELEMENTS: [Element; 5] = [
+    Element::Wood,
+    Element::Fire,
+    Element::Earth,
+    Element::Metal,
+    Element::Water,
+];
+const TRIGRAMS: [Trigram; 8] = [
+    Trigram::Kun,
+    Trigram::Zhen,
+    Trigram::Kan,
+    Trigram::Dui,
+    Trigram::Gen,
+    Trigram::Li,
+    Trigram::Xun,
+    Trigram::Qian,
+];
+const XUNS: [Xun; 6] = [
+    Xun::JiaZi,
+    Xun::JiaXu,
+    Xun::JiaShen,
+    Xun::JiaWu,
+    Xun::JiaChen,
+    Xun::JiaYin,
+];
+const NAYIN: [Nayin; 30] = [
+    Nayin::HaiZhongJin,
+    Nayin::LuZhongHuo,
+    Nayin::DaLinMu,
+    Nayin::LuPangTu,
+    Nayin::JianFengJin,
+    Nayin::ShanTouHuo,
+    Nayin::JianXiaShui,
+    Nayin::ChengTouTu,
+    Nayin::BaiLaJin,
+    Nayin::YangLiuMu,
+    Nayin::QuanZhongShui,
+    Nayin::WuShangTu,
+    Nayin::PiLiHuo,
+    Nayin::SongBaiMu,
+    Nayin::ChangLiuShui,
+    Nayin::ShaZhongJin,
+    Nayin::ShanXiaHuo,
+    Nayin::PingDiMu,
+    Nayin::BiShangTu,
+    Nayin::JinBoJin,
+    Nayin::FuDengHuo,
+    Nayin::TianHeShui,
+    Nayin::DaYiTu,
+    Nayin::ChaiChuanJin,
+    Nayin::SangZheMu,
+    Nayin::DaXiShui,
+    Nayin::ShaZhongTu,
+    Nayin::TianShangHuo,
+    Nayin::ShiLiuMu,
+    Nayin::DaHaiShui,
 ];
 
 #[test]
@@ -156,6 +219,11 @@ fn ganzhi_errors_distinguish_format_names_and_invalid_pairs() {
 #[test]
 fn parse_errors_are_typed_and_preserve_the_pair_error_source() {
     for error in [
+        ParseError::InvalidElement,
+        ParseError::InvalidPrimitive,
+        ParseError::InvalidTrigram,
+        ParseError::InvalidXun,
+        ParseError::InvalidNayin,
         ParseError::InvalidStem,
         ParseError::InvalidBranch,
         ParseError::InvalidGanzhiFormat,
@@ -171,6 +239,119 @@ fn parse_errors_are_typed_and_preserve_the_pair_error_source() {
 struct Buffer<const N: usize> {
     bytes: [u8; N],
     len: usize,
+}
+
+fn named_text_contract<T>(
+    values: &[T],
+    names: &serde_json::Value,
+    name: fn(T) -> &'static str,
+    error: ParseError,
+    aliases: &[&str],
+) where
+    T: Copy + Eq + fmt::Debug + fmt::Display + core::str::FromStr<Err = ParseError>,
+{
+    let names = names.as_array().expect("必需名称数组");
+    assert_eq!(names.len(), values.len(), "样本不能缺失或缩水");
+    let mut seen = std::collections::BTreeSet::new();
+    for (&value, expected) in values.iter().zip(names) {
+        let expected = expected.as_str().expect("名称必须是字符串");
+        assert_ne!(expected, "");
+        assert!(seen.insert(expected), "重复名称不能替代缺失样本");
+        assert_eq!(name(value), expected);
+        assert_eq!(value.to_string(), expected);
+        assert_eq!(expected.parse::<T>(), Ok(value));
+        for padding in [" ", "\t", "\n", "\u{a0}", "\u{3000}", "\u{200b}", "\0"] {
+            for input in [
+                format!("{padding}{expected}"),
+                format!("{expected}{padding}"),
+            ] {
+                assert_eq!(input.parse::<T>(), Err(error));
+            }
+        }
+        for input in [
+            format!("{value:?}"),
+            format!("{expected}{expected}"),
+            format!("{expected}\u{301}"),
+        ] {
+            assert_eq!(input.parse::<T>(), Err(error));
+        }
+        let mut buffer = Buffer {
+            bytes: [0; 16],
+            len: 0,
+        };
+        write!(buffer, "{value}").unwrap();
+        assert_eq!(&buffer.bytes[..buffer.len], expected.as_bytes());
+        let mut empty = Buffer { bytes: [], len: 0 };
+        assert!(write!(empty, "{value}").is_err());
+    }
+    for input in ["", "0", "😀"].into_iter().chain(aliases.iter().copied()) {
+        assert_eq!(input.parse::<T>(), Err(error));
+    }
+}
+
+#[test]
+fn named_values_match_all_51_frozen_names_and_reject_non_exact_input() {
+    let fixture: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/text-values-v1.json")).unwrap();
+    assert_eq!(fixture["version"], 1);
+    assert_eq!(fixture.as_object().unwrap().len(), 6);
+    assert_eq!(Primitive::ALL, PRIMITIVES);
+    assert_eq!(Element::ALL, ELEMENTS);
+    assert_eq!(Trigram::ALL, TRIGRAMS);
+    assert_eq!(Xun::ALL, XUNS);
+    assert_eq!(Nayin::ALL, NAYIN);
+    named_text_contract(
+        &PRIMITIVES,
+        &fixture["primitive"],
+        Primitive::name,
+        ParseError::InvalidPrimitive,
+        &["陰", "陽", "阴阳"],
+    );
+    named_text_contract(
+        &ELEMENTS,
+        &fixture["element"],
+        Element::name,
+        ParseError::InvalidElement,
+        &["木行", "五行"],
+    );
+    named_text_contract(
+        &TRIGRAMS,
+        &fixture["trigram"],
+        Trigram::name,
+        ParseError::InvalidTrigram,
+        &["乾卦", "兌", "離"],
+    );
+    named_text_contract(
+        &XUNS,
+        &fixture["xun"],
+        Xun::name,
+        ParseError::InvalidXun,
+        &["甲子", "甲子旬旬"],
+    );
+    named_text_contract(
+        &NAYIN,
+        &fixture["nayin"],
+        Nayin::name,
+        ParseError::InvalidNayin,
+        &["海中金命", "佛灯火", "覆燈火", "沙中土命"],
+    );
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn chinese_text_names_do_not_become_serde_codes() {
+    fn rejects<T: serde::de::DeserializeOwned>(names: &serde_json::Value) {
+        for name in names.as_array().unwrap() {
+            assert!(serde_json::from_value::<T>(name.clone()).is_err());
+        }
+    }
+    let fixture: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/text-values-v1.json")).unwrap();
+    rejects::<Primitive>(&fixture["primitive"]);
+    rejects::<Element>(&fixture["element"]);
+    rejects::<Trigram>(&fixture["trigram"]);
+    rejects::<Xun>(&fixture["xun"]);
+    rejects::<Nayin>(&fixture["nayin"]);
 }
 
 impl<const N: usize> fmt::Write for Buffer<N> {

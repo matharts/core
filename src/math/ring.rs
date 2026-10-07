@@ -75,7 +75,24 @@ pub trait CyclicRing: Copy + Eq + Sized {
         ))
     }
 
-    /// 从自身到目标的正向距离，范围为 `0..MODULUS`。
+    /// 从自身到目标的正向距离，范围为 `0..MODULUS`；不是有符号差值。
+    ///
+    /// ```
+    /// use matharts_core::{Branch, CyclicRing, Stem};
+    /// assert_eq!(Stem::Jia.distance_to(Stem::Gui), 9);
+    /// assert_eq!(Stem::Gui.distance_to(Stem::Jia), 1);
+    /// assert_eq!(Branch::Hai.distance_to(Branch::Zi), 1);
+    /// ```
+    ///
+    /// 周期值之间不使用减法表达距离：
+    /// ```compile_fail
+    /// use matharts_core::Stem;
+    /// let _ = Stem::Jia - Stem::Gui;
+    /// ```
+    /// ```compile_fail
+    /// use matharts_core::Branch;
+    /// let _ = Branch::Zi - Branch::Hai;
+    /// ```
     fn distance_to(self, target: Self) -> u8 {
         forward_distance(self.index(), target.index(), Self::MODULUS)
     }
