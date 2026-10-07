@@ -312,42 +312,15 @@ impl de::Visitor<'_> for NayinIdentifier {
         }
     }
     fn visit_u64<E: de::Error>(self, value: u64) -> Result<Self::Value, E> {
-        match value {
-            0 => Ok(Nayin::HaiZhongJin),
-            1 => Ok(Nayin::LuZhongHuo),
-            2 => Ok(Nayin::DaLinMu),
-            3 => Ok(Nayin::LuPangTu),
-            4 => Ok(Nayin::JianFengJin),
-            5 => Ok(Nayin::ShanTouHuo),
-            6 => Ok(Nayin::JianXiaShui),
-            7 => Ok(Nayin::ChengTouTu),
-            8 => Ok(Nayin::BaiLaJin),
-            9 => Ok(Nayin::YangLiuMu),
-            10 => Ok(Nayin::QuanZhongShui),
-            11 => Ok(Nayin::WuShangTu),
-            12 => Ok(Nayin::PiLiHuo),
-            13 => Ok(Nayin::SongBaiMu),
-            14 => Ok(Nayin::ChangLiuShui),
-            15 => Ok(Nayin::ShaZhongJin),
-            16 => Ok(Nayin::ShanXiaHuo),
-            17 => Ok(Nayin::PingDiMu),
-            18 => Ok(Nayin::BiShangTu),
-            19 => Ok(Nayin::JinBoJin),
-            20 => Ok(Nayin::FuDengHuo),
-            21 => Ok(Nayin::TianHeShui),
-            22 => Ok(Nayin::DaYiTu),
-            23 => Ok(Nayin::ChaiChuanJin),
-            24 => Ok(Nayin::SangZheMu),
-            25 => Ok(Nayin::DaXiShui),
-            26 => Ok(Nayin::ShaZhongTu),
-            27 => Ok(Nayin::TianShangHuo),
-            28 => Ok(Nayin::ShiLiuMu),
-            29 => Ok(Nayin::DaHaiShui),
-            _ => Err(E::invalid_value(
-                de::Unexpected::Unsigned(value),
-                &"variant index 0 <= i < 30",
-            )),
-        }
+        u8::try_from(value)
+            .ok()
+            .and_then(|index| Nayin::try_from(index).ok())
+            .ok_or_else(|| {
+                E::invalid_value(
+                    de::Unexpected::Unsigned(value),
+                    &"variant index 0 <= i < 30",
+                )
+            })
     }
     fn visit_bytes<E: de::Error>(self, value: &[u8]) -> Result<Self::Value, E> {
         match core::str::from_utf8(value) {

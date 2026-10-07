@@ -96,6 +96,16 @@ impl Stem {
     }
 
     /// 天干相冲 (甲庚冲、乙辛冲、丙壬冲、丁癸冲)
+    ///
+    /// # 采用定义与证据状态
+    /// 来源版本：[南秉吉《选择纪要》上编（1867）《天干相冲》](https://zh.wikisource.org/wiki/選擇紀要/上編)。
+    /// 采用四对双向配对，戊己无冲；
+    /// 消费场景是择日或命理调用方识别两干是否属于此表，不判断冲的实际作用。
+    /// 同输入对照：甲庚返回 `true`，戊己返回 `false`，对应上述四对及戊己无冲一说。
+    /// 相冲不等于所有五行相克：甲戊相克，但本方法返回 `false`。
+    /// 全部 100 个有序输入由 `tests/contracts.rs` 独立配对验收。
+    /// 转录的影印本校勘及跨体系消费方的同输入对照证据待补；保持已有表，
+    /// 不把天干冲表作为所有体系的无条件默认规则。
     #[inline]
     pub const fn is_clashing_with(self, target: Self) -> bool {
         matches!(
@@ -235,22 +245,15 @@ impl<'de> serde::Deserialize<'de> for Stem {
                 }
             }
             fn visit_u64<E: de::Error>(self, value: u64) -> Result<Self::Value, E> {
-                match value {
-                    0 => Ok(Stem::Jia),
-                    1 => Ok(Stem::Yi),
-                    2 => Ok(Stem::Bing),
-                    3 => Ok(Stem::Ding),
-                    4 => Ok(Stem::Wu),
-                    5 => Ok(Stem::Ji),
-                    6 => Ok(Stem::Geng),
-                    7 => Ok(Stem::Xin),
-                    8 => Ok(Stem::Ren),
-                    9 => Ok(Stem::Gui),
-                    _ => Err(E::invalid_value(
-                        de::Unexpected::Unsigned(value),
-                        &"variant index 0 <= i < 10",
-                    )),
-                }
+                u8::try_from(value)
+                    .ok()
+                    .and_then(|index| Stem::try_from(index).ok())
+                    .ok_or_else(|| {
+                        E::invalid_value(
+                            de::Unexpected::Unsigned(value),
+                            &"variant index 0 <= i < 10",
+                        )
+                    })
             }
             fn visit_bytes<E: de::Error>(self, value: &[u8]) -> Result<Self::Value, E> {
                 match core::str::from_utf8(value) {
@@ -293,6 +296,18 @@ impl<'de> serde::Deserialize<'de> for Stem {
 /// 五种天干五合组，五行只是采用表的固定对应。
 ///
 /// 成员按天干索引升序；单干归属不表示另一成员已经出现。
+///
+/// # 采用定义与证据状态
+/// 来源版本：[南秉吉《选择纪要》上编（1867）《天干五合化气》](https://zh.wikisource.org/wiki/選擇紀要/上編)，
+/// 成员另见[《三命通会》四库全书本卷二《论十干合》](https://zh.wikisource.org/wiki/三命通會_(四庫全書本)/卷02)。
+/// 采用甲己土、乙庚金、丙辛水、丁壬木、戊癸火；消费场景是择日或命理中
+/// 两干的固定组身份及对应五行查询。
+/// 同输入对照：乙庚在两处均属于合的成员，本库返回 `YiGeng`，固定对应金；
+/// 甲己返回 `JiaJi`，固定对应土。古籍还讨论化与不化的条件，
+/// 本类型只保留配对和固定对应，不执行条件判断。
+/// 独立成员、五行及编码见 `tests/pair_groups.rs` 的冻结样本验收。
+/// 转录的影印本校勘、跨体系实际消费方及同输入应用结果对照证据待补；
+/// 保留现有定义，不宣称择日的合与命理的合化已经具有相同应用语义。
 ///
 /// ```
 /// use matharts_core::{Element, FiveCombination, Stem};

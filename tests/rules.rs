@@ -10,7 +10,7 @@ fn ten_gods_cover_all_hundred_ordered_pairs() {
         BiJian as B, JieCai as J, PianCai as C, PianYin as Y, QiSha as Q, ShangGuan as H,
         ShiShen as S, ZhengCai as D, ZhengGuan as G, ZhengYin as Z,
     };
-    let table = [
+    let table: [[God; 10]; 10] = [
         [B, J, S, H, C, D, Q, G, Y, Z],
         [J, B, H, S, D, C, G, Q, Z, Y],
         [Y, Z, B, J, S, H, C, D, Q, G],
@@ -36,7 +36,7 @@ fn ten_gods_cover_all_hundred_ordered_pairs() {
 
 #[test]
 fn named_growth_rule_covers_all_hundred_twenty_positions() {
-    let table = [
+    let table: [[u8; 12]; 10] = [
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0],
         [6, 5, 4, 3, 2, 1, 0, 11, 10, 9, 8, 7],
         [10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
@@ -63,14 +63,14 @@ fn named_growth_rule_covers_all_hundred_twenty_positions() {
 #[test]
 fn stem_derivations_cover_year_day_and_branch_pairs() {
     // 每行对应年干/日干的一组五合；列严格按子至亥，不从被测算法生成。
-    let month = [
+    let month: [[u8; 12]; 5] = [
         [2, 3, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1],
         [4, 5, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3],
         [6, 7, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5],
         [8, 9, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7],
         [0, 1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
     ];
-    let hour = [
+    let hour: [[u8; 12]; 5] = [
         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1],
         [2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3],
         [4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5],
@@ -96,7 +96,7 @@ fn stem_derivations_cover_year_day_and_branch_pairs() {
 #[test]
 fn every_nayin_pair_has_the_frozen_element() {
     use Element::{Earth as E, Fire as F, Metal as M, Water as A, Wood as W};
-    let expected = [
+    let expected: [Element; 30] = [
         M, F, W, E, M, F, A, E, M, W, A, E, F, W, A, M, F, W, E, M, F, A, E, M, W, A, E, F, W, A,
     ];
     for (slot, element) in (0_u8..30).zip(expected) {
@@ -109,9 +109,9 @@ fn every_nayin_pair_has_the_frozen_element() {
 
 #[test]
 fn all_branch_pairs_respect_distinct_relation_contracts() {
-    let harms = [(0, 7), (1, 6), (2, 5), (3, 4), (8, 11), (9, 10)];
-    let breaks = [(0, 9), (3, 6), (4, 1), (5, 8), (2, 11), (7, 10)];
-    let punishments = [
+    let harms: [(u8, u8); 6] = [(0, 7), (1, 6), (2, 5), (3, 4), (8, 11), (9, 10)];
+    let breaks: [(u8, u8); 6] = [(0, 9), (3, 6), (4, 1), (5, 8), (2, 11), (7, 10)];
+    let punishments: [(u8, u8); 12] = [
         (0, 3),
         (3, 0),
         (2, 5),
@@ -125,7 +125,7 @@ fn all_branch_pairs_respect_distinct_relation_contracts() {
         (9, 9),
         (11, 11),
     ];
-    let combinations = [(0, 1), (2, 11), (3, 10), (4, 9), (5, 8), (6, 7)];
+    let combinations: [(u8, u8); 6] = [(0, 1), (2, 11), (3, 10), (4, 9), (5, 8), (6, 7)];
     for a in 0_u8..12 {
         for b in 0_u8..12 {
             let x = Branch::try_from(a).unwrap();
@@ -146,7 +146,7 @@ fn all_branch_pairs_respect_distinct_relation_contracts() {
 #[test]
 fn hidden_stems_and_combination_elements_match_selected_tables() {
     use Stem::{Bing, Ding, Geng, Gui, Ji, Jia, Ren, Wu, Xin, Yi};
-    let expected = [
+    let expected: [(Stem, Option<Stem>, Option<Stem>); 12] = [
         (Gui, None, None),
         (Ji, Some(Gui), Some(Xin)),
         (Jia, Some(Bing), Some(Wu)),
@@ -167,7 +167,7 @@ fn hidden_stems_and_combination_elements_match_selected_tables() {
             (primary, secondary, tertiary)
         );
     }
-    let elements = [
+    let elements: [Element; 5] = [
         Element::Earth,
         Element::Metal,
         Element::Water,

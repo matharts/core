@@ -237,7 +237,7 @@ fn check_model<T: Serialize + DeserializeOwned + Copy + PartialEq + core::fmt::D
         assert!(serde_json::from_str::<T>(&format!(r#"{{"{code}":null,"{code}":null}}"#)).is_err());
     }
     let len = u32::try_from(cases.len()).unwrap();
-    for index in [u64::from(len), u64::MAX] {
+    for index in [u64::from(len), 255, 256, u64::MAX] {
         assert_de_tokens_error::<Compact<T>>(
             &[Token::Enum { name }, Token::U64(index)],
             &format!("invalid value: integer `{index}`, expected variant index 0 <= i < {len}"),
