@@ -176,8 +176,16 @@ impl Branch {
     /// 地支藏干：本气在首槽，其余成员按下表固定排列，不表示权重或旺衰。
     ///
     /// 本方法返回本库采用表中的记录，不接受外部记录进行校验。
-    /// 成员采用《渊海子平》“又地支藏遁歌”；槽位顺序是本库的固定表示，
-    /// 不把歌诀次序解释为气的等级，也不计算月内司令天数。
+    /// 槽位顺序是本库的固定表示，不把歌诀次序解释为气的等级，
+    /// 也不计算月内司令天数。
+    ///
+    /// # 采用定义与证据状态
+    /// 成员对照[《渊海子平》转录《又地支藏遁歌》](https://zh.wikisource.org/wiki/淵海子平#又地支藏遁歌)，
+    /// 并以[《三命通会》四库全书本卷二《论地支》](https://zh.wikisource.org/wiki/三命通會_(四庫全書本)/卷02#論地支)
+    /// 对照季节承接意义的余气。前一转录页未明确底本且标有来源未核实提示，
+    /// 因而其刊本版本及影印校勘仍待补；不把网页转录当作已校勘的古籍版本。
+    /// 消费场景是调用方已确定地支后，查询子平藏干成员；本方法不判断藏干透出、
+    /// 权重、旺衰或月令用事。这些条件不能从槽位位置推定。
     ///
     /// | 支 | `primary` | `secondary` | `tertiary` |
     /// | --- | --- | --- | --- |
@@ -196,8 +204,25 @@ impl Branch {
     ///
     /// “—”表示 `None`。季节承接意义的余气丑癸、辰乙、未丁、戌辛位于
     /// `secondary`，不能直接从第三槽 `tertiary` 提取这类余气。
-    /// 来源：[《渊海子平》](https://zh.wikisource.org/wiki/淵海子平)、
-    /// [《三命通会》卷二《论地支》](https://zh.wikisource.org/wiki/三命通會_(四庫全書本)/卷02)。
+    /// 同输入对照：歌诀列丑的成员为癸、辛、己，本表返回己、癸、辛，成员相同而
+    /// 排列不同；《论地支》称辰中的乙为余气，另以壬水墓后还魂说明癸，
+    /// 不能把这些描述合并为统一的槽位等级。
+    /// 12 支的成员及槽位由 `tests/rules.rs` 独立表验收。
+    /// 不同体系的藏干成员、槽位含义及实际消费方同输入对照证据待补；
+    /// 本库示例和表测试不构成其他体系已经接入的证明。
+    ///
+    /// # Examples
+    /// ```
+    /// use matharts_core::{Branch, HiddenStems, Stem};
+    ///
+    /// assert_eq!(Branch::Chou.hidden_stems(), HiddenStems {
+    ///     primary: Stem::Ji,
+    ///     secondary: Some(Stem::Gui),
+    ///     tertiary: Some(Stem::Xin),
+    /// });
+    /// assert_eq!(Branch::Chen.hidden_stems().secondary, Some(Stem::Yi));
+    /// assert_eq!(Branch::Chen.hidden_stems().tertiary, Some(Stem::Gui));
+    /// ```
     #[inline]
     pub const fn hidden_stems(self) -> HiddenStems {
         match self {
