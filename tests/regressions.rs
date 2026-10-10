@@ -1,7 +1,7 @@
 //! 已复现故障的回归测试；必须在 debug 和 release 执行。
-use matharts_core::{Branch, CyclicRing, Growth, SexagenaryCycle, Stem};
+use matharts_core::{Branch, CyclicSequence, Ganzhi, GrowthPhase, Stem};
 
-fn check_extreme_offsets<T: CyclicRing>() {
+fn check_extreme_offsets<T: CyclicSequence>() {
     for index in 0..T::MODULUS.get() {
         for delta in [
             i32::MIN,
@@ -28,8 +28,8 @@ fn check_extreme_offsets<T: CyclicRing>() {
 fn all_cycle_types_handle_extreme_offsets() {
     check_extreme_offsets::<Stem>();
     check_extreme_offsets::<Branch>();
-    check_extreme_offsets::<Growth>();
-    check_extreme_offsets::<SexagenaryCycle>();
+    check_extreme_offsets::<GrowthPhase>();
+    check_extreme_offsets::<Ganzhi>();
 }
 
 #[test]
@@ -39,12 +39,12 @@ fn exactly_sixty_pairs_are_valid_and_roundtrip() {
         for b in 0..12 {
             let stem = Stem::from_index(s);
             let branch = Branch::from_index(b);
-            let value = SexagenaryCycle::new(stem, branch);
+            let value = Ganzhi::new(stem, branch);
             assert_eq!(value.is_some(), s % 2 == b % 2);
             if let Some(value) = value {
                 assert_eq!(value.stem(), stem);
                 assert_eq!(value.branch(), branch);
-                assert_eq!(SexagenaryCycle::from_index(value.index()), value);
+                assert_eq!(Ganzhi::from_index(value.index()), value);
                 valid += 1;
             }
         }
@@ -67,14 +67,14 @@ fn serde_validates_all_pairs() {
     let mut accepted = 0;
     for (s, stem) in stems.into_iter().enumerate() {
         for (b, branch) in branches.into_iter().enumerate() {
-            let value = SexagenaryCycle::deserialize(MapDeserializer::<_, Error>::new(
+            let value = Ganzhi::deserialize(MapDeserializer::<_, Error>::new(
                 [("stem", stem), ("branch", branch)].into_iter(),
             ));
             assert_eq!(value.is_ok(), s % 2 == b % 2, "{stem}/{branch}");
             if let Ok(value) = value {
                 assert_eq!(usize::from(value.stem().index()), s);
                 assert_eq!(usize::from(value.branch().index()), b);
-                assert_eq!(SexagenaryCycle::from_index(value.index()), value);
+                assert_eq!(Ganzhi::from_index(value.index()), value);
                 accepted += 1;
             }
         }

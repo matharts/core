@@ -1,7 +1,7 @@
 //! 天干推导：五虎遁与五鼠遁的固定映射；调用方负责历法边界。
 
 use crate::branch::Branch;
-use crate::math::CyclicRing;
+use crate::math::CyclicSequence;
 use crate::stem::Stem;
 
 /// 五虎遁：年上起月干（以正月寅月为基准推算目标月支的天干）

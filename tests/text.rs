@@ -1,8 +1,8 @@
 //! 中文文本契约：独立预期、严格边界与全部干支配对。
 use core::{error::Error, fmt, fmt::Write};
 use matharts_core::{
-    Branch, CyclicRing, Element, InvalidGanzhi, Nayin, ParseError, Primitive, SexagenaryCycle,
-    Stem, Trigram, Xun,
+    Branch, CyclicSequence, Element, Ganzhi, InvalidGanzhi, Nayin, ParseError, Stem, Trigram, Xun,
+    YinYang,
 };
 use proptest::prelude::*;
 
@@ -43,7 +43,7 @@ const GANZHI: [&str; 60] = [
 ];
 
 // 身份序列由测试显式定义；生产 ALL 与名称表不能共同生成预期。
-const PRIMITIVES: [Primitive; 2] = [Primitive::Yang, Primitive::Yin];
+const YIN_YANG_VALUES: [YinYang; 2] = [YinYang::Yang, YinYang::Yin];
 const ELEMENTS: [Element; 5] = [
     Element::Wood,
     Element::Fire,
@@ -119,10 +119,10 @@ fn all_stems_and_branches_match_independent_chinese_names() {
 #[test]
 fn all_sixty_ganzhi_match_independent_chinese_names() {
     for (index, text) in (0_u8..60).zip(GANZHI) {
-        let value = SexagenaryCycle::try_from(index).unwrap();
+        let value = Ganzhi::try_from(index).unwrap();
         assert_eq!(value.to_string(), text);
-        assert_eq!(text.parse::<SexagenaryCycle>(), Ok(value));
-        assert_eq!(value.to_string().parse::<SexagenaryCycle>(), Ok(value));
+        assert_eq!(text.parse::<Ganzhi>(), Ok(value));
+        assert_eq!(value.to_string().parse::<Ganzhi>(), Ok(value));
     }
 }
 
@@ -133,7 +133,7 @@ fn all_120_stem_branch_texts_accept_only_the_sixty_named_pairs() {
     for (stem, stem_text) in STEMS {
         for (branch, branch_text) in BRANCHES {
             let text = format!("{stem_text}{branch_text}");
-            let parsed = text.parse::<SexagenaryCycle>();
+            let parsed = text.parse::<Ganzhi>();
             if let Some(index) = GANZHI.iter().position(|expected| *expected == text) {
                 let value = parsed.unwrap();
                 assert_eq!(usize::from(value.index()), index);
@@ -172,7 +172,7 @@ fn aliases_whitespace_and_extra_characters_are_rejected() {
         for text in GANZHI {
             for input in [format!("{padding}{text}"), format!("{text}{padding}")] {
                 assert_eq!(
-                    input.parse::<SexagenaryCycle>(),
+                    input.parse::<Ganzhi>(),
                     Err(ParseError::InvalidGanzhiFormat)
                 );
             }
@@ -192,26 +192,17 @@ fn ganzhi_errors_distinguish_format_names_and_invalid_pairs() {
         "甲子年",
         "甲子\u{301}",
     ] {
-        assert_eq!(
-            text.parse::<SexagenaryCycle>(),
-            Err(ParseError::InvalidGanzhiFormat)
-        );
+        assert_eq!(text.parse::<Ganzhi>(), Err(ParseError::InvalidGanzhiFormat));
     }
     // 这些输入都是两个 Unicode 字符；不能按固定字节位置切片。
     for text in ["子甲", "A子", "😀子", "𠀀子", "\u{301}子", "\0子", "😃😀"] {
-        assert_eq!(
-            text.parse::<SexagenaryCycle>(),
-            Err(ParseError::InvalidStem)
-        );
+        assert_eq!(text.parse::<Ganzhi>(), Err(ParseError::InvalidStem));
     }
     for text in ["甲甲", "甲A", "甲😀", "甲𠀀", "甲\u{301}", "甲\0", "甲醜"] {
-        assert_eq!(
-            text.parse::<SexagenaryCycle>(),
-            Err(ParseError::InvalidBranch)
-        );
+        assert_eq!(text.parse::<Ganzhi>(), Err(ParseError::InvalidBranch));
     }
     assert_eq!(
-        "甲丑".parse::<SexagenaryCycle>(),
+        "甲丑".parse::<Ganzhi>(),
         Err(ParseError::InvalidGanzhi(InvalidGanzhi))
     );
 }
@@ -220,7 +211,7 @@ fn ganzhi_errors_distinguish_format_names_and_invalid_pairs() {
 fn parse_errors_are_typed_and_preserve_the_pair_error_source() {
     for error in [
         ParseError::InvalidElement,
-        ParseError::InvalidPrimitive,
+        ParseError::InvalidYinYang,
         ParseError::InvalidTrigram,
         ParseError::InvalidXun,
         ParseError::InvalidNayin,
@@ -231,7 +222,7 @@ fn parse_errors_are_typed_and_preserve_the_pair_error_source() {
         assert_ne!(error.to_string(), "");
         assert!(error.source().is_none());
     }
-    let error = "甲丑".parse::<SexagenaryCycle>().unwrap_err();
+    let error = "甲丑".parse::<Ganzhi>().unwrap_err();
     assert_eq!(error.to_string(), InvalidGanzhi.to_string());
     assert!(error.source().unwrap().is::<InvalidGanzhi>());
 }
@@ -292,19 +283,19 @@ fn named_text_contract<T>(
 #[test]
 fn named_values_match_all_51_frozen_names_and_reject_non_exact_input() {
     let fixture: serde_json::Value =
-        serde_json::from_str(include_str!("fixtures/text-values-v1.json")).unwrap();
-    assert_eq!(fixture["version"], 1);
+        serde_json::from_str(include_str!("fixtures/text-values-v2.json")).unwrap();
+    assert_eq!(fixture["version"], 2);
     assert_eq!(fixture.as_object().unwrap().len(), 6);
-    assert_eq!(Primitive::ALL, PRIMITIVES);
+    assert_eq!(YinYang::ALL, YIN_YANG_VALUES);
     assert_eq!(Element::ALL, ELEMENTS);
     assert_eq!(Trigram::ALL, TRIGRAMS);
     assert_eq!(Xun::ALL, XUNS);
     assert_eq!(Nayin::ALL, NAYIN);
     named_text_contract(
-        &PRIMITIVES,
-        &fixture["primitive"],
-        Primitive::name,
-        ParseError::InvalidPrimitive,
+        &YIN_YANG_VALUES,
+        &fixture["yin_yang"],
+        YinYang::name,
+        ParseError::InvalidYinYang,
         &["陰", "陽", "阴阳"],
     );
     named_text_contract(
@@ -346,8 +337,8 @@ fn chinese_text_names_do_not_become_serde_codes() {
         }
     }
     let fixture: serde_json::Value =
-        serde_json::from_str(include_str!("fixtures/text-values-v1.json")).unwrap();
-    rejects::<Primitive>(&fixture["primitive"]);
+        serde_json::from_str(include_str!("fixtures/text-values-v2.json")).unwrap();
+    rejects::<YinYang>(&fixture["yin_yang"]);
     rejects::<Element>(&fixture["element"]);
     rejects::<Trigram>(&fixture["trigram"]);
     rejects::<Xun>(&fixture["xun"]);
@@ -370,7 +361,7 @@ fn display_works_with_stack_buffers_and_propagates_writer_errors() {
         bytes: [0; 6],
         len: 0,
     };
-    let value = SexagenaryCycle::new(Stem::Jia, Branch::Zi).unwrap();
+    let value = Ganzhi::new(Stem::Jia, Branch::Zi).unwrap();
     write!(buffer, "{value}").unwrap();
     assert_eq!(&buffer.bytes[..buffer.len], "甲子".as_bytes());
     let mut short = Buffer {
@@ -391,6 +382,6 @@ proptest! {
         let expected_ganzhi = GANZHI.iter().position(|name| *name == input);
         prop_assert_eq!(input.parse::<Stem>().ok(), expected_stem);
         prop_assert_eq!(input.parse::<Branch>().ok(), expected_branch);
-        prop_assert_eq!(input.parse::<SexagenaryCycle>().map(|value| usize::from(value.index())).ok(), expected_ganzhi);
+        prop_assert_eq!(input.parse::<Ganzhi>().map(|value| usize::from(value.index())).ok(), expected_ganzhi);
     }
 }

@@ -148,7 +148,7 @@ impl TryFrom<u8> for Element {
 impl<'de> serde::Deserialize<'de> for Element {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         use serde::de::{self, EnumAccess, VariantAccess};
-        const CODES: &[&str] = &["Wood", "Fire", "Earth", "Metal", "Water"];
+        const CODES: &[&str; Element::ALL.len()] = &["Wood", "Fire", "Earth", "Metal", "Water"];
         struct Identifier;
         impl<'de> de::DeserializeSeed<'de> for Identifier {
             type Value = Element;
@@ -165,27 +165,23 @@ impl<'de> serde::Deserialize<'de> for Element {
                 f.write_str("variant identifier")
             }
             fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
-                match value {
-                    "Wood" => Ok(Element::Wood),
-                    "Fire" => Ok(Element::Fire),
-                    "Earth" => Ok(Element::Earth),
-                    "Metal" => Ok(Element::Metal),
-                    "Water" => Ok(Element::Water),
-                    _ => Err(E::unknown_variant(value, CODES)),
-                }
+                CODES
+                    .iter()
+                    .position(|code| *code == value)
+                    .map(|index| Element::ALL[index])
+                    .ok_or_else(|| E::unknown_variant(value, CODES))
             }
             fn visit_u64<E: de::Error>(self, value: u64) -> Result<Self::Value, E> {
-                match value {
-                    0 => Ok(Element::Wood),
-                    1 => Ok(Element::Fire),
-                    2 => Ok(Element::Earth),
-                    3 => Ok(Element::Metal),
-                    4 => Ok(Element::Water),
-                    _ => Err(E::invalid_value(
-                        de::Unexpected::Unsigned(value),
-                        &"variant index 0 <= i < 5",
-                    )),
-                }
+                usize::try_from(value)
+                    .ok()
+                    .and_then(|index| Element::ALL.get(index))
+                    .copied()
+                    .ok_or_else(|| {
+                        E::invalid_value(
+                            de::Unexpected::Unsigned(value),
+                            &"variant index 0 <= i < 5",
+                        )
+                    })
             }
             fn visit_bytes<E: de::Error>(self, value: &[u8]) -> Result<Self::Value, E> {
                 match core::str::from_utf8(value) {
@@ -230,12 +226,19 @@ impl<'de> serde::Deserialize<'de> for Element {
 impl<'de> serde::Deserialize<'de> for ElementRelation {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         use serde::de::{self, EnumAccess, VariantAccess};
-        const CODES: &[&str] = &[
+        const CODES: &[&str; 5] = &[
             "Same",
             "Generates",
             "Overcomes",
             "OvercomeBy",
             "GeneratedBy",
+        ];
+        const VALUES: [ElementRelation; CODES.len()] = [
+            ElementRelation::Same,
+            ElementRelation::Generates,
+            ElementRelation::Overcomes,
+            ElementRelation::OvercomeBy,
+            ElementRelation::GeneratedBy,
         ];
         struct Identifier;
         impl<'de> de::DeserializeSeed<'de> for Identifier {
@@ -253,27 +256,23 @@ impl<'de> serde::Deserialize<'de> for ElementRelation {
                 f.write_str("variant identifier")
             }
             fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
-                match value {
-                    "Same" => Ok(ElementRelation::Same),
-                    "Generates" => Ok(ElementRelation::Generates),
-                    "Overcomes" => Ok(ElementRelation::Overcomes),
-                    "OvercomeBy" => Ok(ElementRelation::OvercomeBy),
-                    "GeneratedBy" => Ok(ElementRelation::GeneratedBy),
-                    _ => Err(E::unknown_variant(value, CODES)),
-                }
+                CODES
+                    .iter()
+                    .position(|code| *code == value)
+                    .map(|index| VALUES[index])
+                    .ok_or_else(|| E::unknown_variant(value, CODES))
             }
             fn visit_u64<E: de::Error>(self, value: u64) -> Result<Self::Value, E> {
-                match value {
-                    0 => Ok(ElementRelation::Same),
-                    1 => Ok(ElementRelation::Generates),
-                    2 => Ok(ElementRelation::Overcomes),
-                    3 => Ok(ElementRelation::OvercomeBy),
-                    4 => Ok(ElementRelation::GeneratedBy),
-                    _ => Err(E::invalid_value(
-                        de::Unexpected::Unsigned(value),
-                        &"variant index 0 <= i < 5",
-                    )),
-                }
+                usize::try_from(value)
+                    .ok()
+                    .and_then(|index| VALUES.get(index))
+                    .copied()
+                    .ok_or_else(|| {
+                        E::invalid_value(
+                            de::Unexpected::Unsigned(value),
+                            &"variant index 0 <= i < 5",
+                        )
+                    })
             }
             fn visit_bytes<E: de::Error>(self, value: &[u8]) -> Result<Self::Value, E> {
                 match core::str::from_utf8(value) {

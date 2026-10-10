@@ -1,0 +1,79 @@
+--- a/src/branch.rs
++++ b/src/branch.rs
+@@ -939,9 +939,5 @@
+-                match value {
+-                    "ZiWu" => Ok(SixClash::ZiWu),
+-                    "ChouWei" => Ok(SixClash::ChouWei),
+-                    "YinShen" => Ok(SixClash::YinShen),
+-                    "MaoYou" => Ok(SixClash::MaoYou),
+-                    "ChenXu" => Ok(SixClash::ChenXu),
+-                    "SiHai" => Ok(SixClash::SiHai),
+-                    _ => Err(E::unknown_variant(value, CODES)),
+-                }
++                CODES
++                    .iter()
++                    .position(|code| *code == value)
++                    .map(|index| SixClash::ALL[index])
++                    .ok_or_else(|| E::unknown_variant(value, CODES))
+--- a/src/growth_phase.rs
++++ b/src/growth_phase.rs
+@@ -193,15 +193,5 @@
+-                match value {
+-                    "ChangSheng" => Ok(GrowthPhase::ChangSheng),
+-                    "MuYu" => Ok(GrowthPhase::MuYu),
+-                    "GuanDai" => Ok(GrowthPhase::GuanDai),
+-                    "LinGuan" => Ok(GrowthPhase::LinGuan),
+-                    "DiWang" => Ok(GrowthPhase::DiWang),
+-                    "Shuai" => Ok(GrowthPhase::Shuai),
+-                    "Bing" => Ok(GrowthPhase::Bing),
+-                    "Si" => Ok(GrowthPhase::Si),
+-                    "Mu" => Ok(GrowthPhase::Mu),
+-                    "Jue" => Ok(GrowthPhase::Jue),
+-                    "Tai" => Ok(GrowthPhase::Tai),
+-                    "Yang" => Ok(GrowthPhase::Yang),
+-                    _ => Err(E::unknown_variant(value, CODES)),
+-                }
++                CODES
++                    .iter()
++                    .position(|code| *code == value)
++                    .map(|index| GrowthPhase::ALL[index])
++                    .ok_or_else(|| E::unknown_variant(value, CODES))
+--- a/src/xun.rs
++++ b/src/xun.rs
+@@ -87 +87 @@
+-        let mut index = self.index() * 10;
++        let mut next = self.leader();
+@@ -89,2 +89,2 @@
+-            let current = Ganzhi::from_index(index);
+-            index += 1;
++            let current = next;
++            next = next.offset(1);
+--- a/src/hexagram.rs
++++ b/src/hexagram.rs
+@@ -88,5 +88 @@
+-        if self.bits() & (1 << position.index()) == 0 {
+-            YinYang::Yin
+-        } else {
+-            YinYang::Yang
+-        }
++        self.lines()[position.index() as usize]
+@@ -96,9 +92,3 @@
+-        let mask = 1 << position.index();
+-        let bits = match value {
+-            YinYang::Yang => self.bits() | mask,
+-            YinYang::Yin => self.bits() & !mask,
+-        };
+-        Self::from_trigrams(
+-            Trigram::ALL[(bits & 7) as usize],
+-            Trigram::ALL[(bits >> 3) as usize],
+-        )
++        let mut lines = self.lines();
++        lines[position.index() as usize] = value;
++        Self::from_lines(lines)
+@@ -108,5 +98 @@
+-        let bits = self.bits() ^ (1 << position.index());
+-        Self::from_trigrams(
+-            Trigram::ALL[(bits & 7) as usize],
+-            Trigram::ALL[(bits >> 3) as usize],
+-        )
++        self.with_line(position, self.line(position).invert())

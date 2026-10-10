@@ -28,9 +28,22 @@ proptest = "1.6"
 serde_json = "1.0"
 serde_test = "1.0.177"
 
+[[bench]]
+name = "serde_decode"
+harness = false
+test = false
+required-features = ["serde"]
+
+[[bench]]
+name = "core_operations"
+harness = false
+test = false
+required-features = ["serde"]
+
 [lints.rust]
 unsafe_code = "forbid"
 missing_docs = "warn"
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(serde_bench_isolated)', 'cfg(serde_bench_type, values("YinYang", "Element", "ElementRelation", "Stem", "Branch", "TenGod", "GrowthPhase", "FiveCombination", "SixCombination", "SixClash", "SixHarm", "SixBreak", "ThreeCombination", "ThreeMeeting", "Xun", "Nayin", "TrigramPosition", "HexagramPosition", "Trigram"))'] }
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }

@@ -1,13 +1,13 @@
 //! 八卦的三爻结构；数组从下到上，位编码最低位代表最下爻。
 
-use crate::{InvalidIndex, Primitive};
+use crate::{InvalidIndex, YinYang};
 use core::{fmt, str::FromStr};
 
 /// 八种三爻结构。位编码阳为1、阴为0，不是先天、后天或文王卦序。
 ///
 /// ```
-/// use matharts_core::{Primitive, Trigram, TrigramPosition};
-/// let zhen = Trigram::from_lines([Primitive::Yang, Primitive::Yin, Primitive::Yin]);
+/// use matharts_core::{YinYang, Trigram, TrigramPosition};
+/// let zhen = Trigram::from_lines([YinYang::Yang, YinYang::Yin, YinYang::Yin]);
 /// assert_eq!(zhen, Trigram::Zhen);
 /// assert_eq!(zhen.bits(), 1);
 /// assert_eq!(zhen.reverse_lines(), Trigram::Gen);
@@ -81,11 +81,11 @@ impl Trigram {
         }
     }
     /// 从下到上的三个阴阳爻构造卦。
-    pub const fn from_lines(lines: [Primitive; 3]) -> Self {
+    pub const fn from_lines(lines: [YinYang; 3]) -> Self {
         let mut bits = 0;
         let mut index = 0;
         while index < 3 {
-            if matches!(lines[index], Primitive::Yang) {
+            if matches!(lines[index], YinYang::Yang) {
                 bits |= 1 << index;
             }
             index += 1;
@@ -93,7 +93,7 @@ impl Trigram {
         Self::ALL[bits]
     }
     /// 返回从下到上的三个爻。
-    pub const fn lines(self) -> [Primitive; 3] {
+    pub const fn lines(self) -> [YinYang; 3] {
         [
             self.line(TrigramPosition::First),
             self.line(TrigramPosition::Second),
@@ -119,19 +119,19 @@ impl Trigram {
         }
     }
     /// 查询指定爻位的阴阳。
-    pub const fn line(self, position: TrigramPosition) -> Primitive {
+    pub const fn line(self, position: TrigramPosition) -> YinYang {
         if self.bits() & (1 << position.index()) == 0 {
-            Primitive::Yin
+            YinYang::Yin
         } else {
-            Primitive::Yang
+            YinYang::Yang
         }
     }
     /// 返回指定爻位替换为给定阴阳后的卦。
-    pub const fn with_line(self, position: TrigramPosition, value: Primitive) -> Self {
+    pub const fn with_line(self, position: TrigramPosition, value: YinYang) -> Self {
         let mask = 1 << position.index();
         let bits = match value {
-            Primitive::Yang => self.bits() | mask,
-            Primitive::Yin => self.bits() & !mask,
+            YinYang::Yang => self.bits() | mask,
+            YinYang::Yin => self.bits() & !mask,
         };
         Self::ALL[bits as usize]
     }
@@ -190,7 +190,7 @@ impl<'de> serde::Deserialize<'de> for TrigramPosition {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         use core::fmt;
         use serde::de::{self, EnumAccess, VariantAccess, Visitor};
-        const CODES: &[&str] = &["First", "Second", "Third"];
+        const CODES: &[&str; TrigramPosition::ALL.len()] = &["First", "Second", "Third"];
         struct CodeVisitor;
         impl Visitor<'_> for CodeVisitor {
             type Value = TrigramPosition;
@@ -198,12 +198,11 @@ impl<'de> serde::Deserialize<'de> for TrigramPosition {
                 f.write_str("TrigramPosition code string")
             }
             fn visit_str<E: de::Error>(self, value: &str) -> Result<TrigramPosition, E> {
-                match value {
-                    "First" => Ok(TrigramPosition::First),
-                    "Second" => Ok(TrigramPosition::Second),
-                    "Third" => Ok(TrigramPosition::Third),
-                    _ => Err(E::unknown_variant(value, CODES)),
-                }
+                CODES
+                    .iter()
+                    .position(|code| *code == value)
+                    .map(|index| TrigramPosition::ALL[index])
+                    .ok_or_else(|| E::unknown_variant(value, CODES))
             }
         }
         // 索引只用于非人类可读枚举标识，不让 JSON 数字通过字符串入口。
@@ -220,12 +219,12 @@ impl<'de> serde::Deserialize<'de> for TrigramPosition {
                         CodeVisitor.visit_str(value).map(Identifier)
                     }
                     fn visit_u64<E: de::Error>(self, value: u64) -> Result<Identifier, E> {
-                        match value {
-                            0 => Ok(Identifier(TrigramPosition::First)),
-                            1 => Ok(Identifier(TrigramPosition::Second)),
-                            2 => Ok(Identifier(TrigramPosition::Third)),
-                            _ => Err(E::invalid_value(de::Unexpected::Unsigned(value), &self)),
-                        }
+                        usize::try_from(value)
+                            .ok()
+                            .and_then(|index| TrigramPosition::ALL.get(index))
+                            .copied()
+                            .map(Identifier)
+                            .ok_or_else(|| E::invalid_value(de::Unexpected::Unsigned(value), &self))
                     }
                 }
                 d.deserialize_identifier(IdentifierVisitor)
@@ -258,7 +257,8 @@ impl<'de> serde::Deserialize<'de> for Trigram {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         use core::fmt;
         use serde::de::{self, EnumAccess, VariantAccess, Visitor};
-        const CODES: &[&str] = &["Kun", "Zhen", "Kan", "Dui", "Gen", "Li", "Xun", "Qian"];
+        const CODES: &[&str; Trigram::ALL.len()] =
+            &["Kun", "Zhen", "Kan", "Dui", "Gen", "Li", "Xun", "Qian"];
         struct CodeVisitor;
         impl Visitor<'_> for CodeVisitor {
             type Value = Trigram;
@@ -266,17 +266,11 @@ impl<'de> serde::Deserialize<'de> for Trigram {
                 f.write_str("Trigram code string")
             }
             fn visit_str<E: de::Error>(self, value: &str) -> Result<Trigram, E> {
-                match value {
-                    "Kun" => Ok(Trigram::Kun),
-                    "Zhen" => Ok(Trigram::Zhen),
-                    "Kan" => Ok(Trigram::Kan),
-                    "Dui" => Ok(Trigram::Dui),
-                    "Gen" => Ok(Trigram::Gen),
-                    "Li" => Ok(Trigram::Li),
-                    "Xun" => Ok(Trigram::Xun),
-                    "Qian" => Ok(Trigram::Qian),
-                    _ => Err(E::unknown_variant(value, CODES)),
-                }
+                CODES
+                    .iter()
+                    .position(|code| *code == value)
+                    .map(|index| Trigram::ALL[index])
+                    .ok_or_else(|| E::unknown_variant(value, CODES))
             }
         }
         // 索引只用于非人类可读枚举标识，不让 JSON 数字通过字符串入口。
@@ -293,17 +287,12 @@ impl<'de> serde::Deserialize<'de> for Trigram {
                         CodeVisitor.visit_str(value).map(Identifier)
                     }
                     fn visit_u64<E: de::Error>(self, value: u64) -> Result<Identifier, E> {
-                        match value {
-                            0 => Ok(Identifier(Trigram::Kun)),
-                            1 => Ok(Identifier(Trigram::Zhen)),
-                            2 => Ok(Identifier(Trigram::Kan)),
-                            3 => Ok(Identifier(Trigram::Dui)),
-                            4 => Ok(Identifier(Trigram::Gen)),
-                            5 => Ok(Identifier(Trigram::Li)),
-                            6 => Ok(Identifier(Trigram::Xun)),
-                            7 => Ok(Identifier(Trigram::Qian)),
-                            _ => Err(E::invalid_value(de::Unexpected::Unsigned(value), &self)),
-                        }
+                        usize::try_from(value)
+                            .ok()
+                            .and_then(|index| Trigram::ALL.get(index))
+                            .copied()
+                            .map(Identifier)
+                            .ok_or_else(|| E::invalid_value(de::Unexpected::Unsigned(value), &self))
                     }
                 }
                 d.deserialize_identifier(IdentifierVisitor)

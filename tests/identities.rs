@@ -1,6 +1,6 @@
 //! 旬与纳音身份的固定样本、全集关系、索引边界及编码契约。
 
-use matharts_core::{Branch, CyclicRing, Element, InvalidIndex, Nayin, SexagenaryCycle, Stem, Xun};
+use matharts_core::{Branch, CyclicSequence, Element, Ganzhi, InvalidIndex, Nayin, Stem, Xun};
 
 // 固定验收表独立写出身份、名称、五行和两柱，不由实现查询生成预期。
 // 纳音采用当前显示用字；文献异写不作为另一个身份。
@@ -68,7 +68,7 @@ fn thirty_identities_cover_all_sixty_ganzhi_with_fixed_names_and_elements() {
         assert_eq!(Nayin::try_from(index).unwrap(), identity);
         assert_eq!(identity.name(), name);
         assert_eq!(identity.element(), element);
-        let expected = pairs.map(|(stem, branch)| SexagenaryCycle::new(stem, branch).unwrap());
+        let expected = pairs.map(|(stem, branch)| Ganzhi::new(stem, branch).unwrap());
         assert_eq!(identity.ganzhi_pair(), expected);
         for value in expected {
             assert_eq!(value.nayin(), identity);
@@ -116,8 +116,8 @@ fn six_xun_partition_the_cycle_and_cover_void_queries() {
     assert_eq!(Xun::ALL, XUNS);
     let mut seen = [false; 60];
     for (i, xun) in XUNS.into_iter().enumerate() {
-        let expected: [SexagenaryCycle; 10] =
-            core::array::from_fn(|j| SexagenaryCycle::new(stems[j], branches[i][j]).unwrap());
+        let expected: [Ganzhi; 10] =
+            core::array::from_fn(|j| Ganzhi::new(stems[j], branches[i][j]).unwrap());
         assert_eq!(xun.name(), names[i]);
         assert_eq!(xun.leader(), expected[0]);
         assert_eq!(xun.members(), expected);
@@ -139,7 +139,7 @@ fn six_xun_partition_the_cycle_and_cover_void_queries() {
         }
         // 同时验证所有非成员，而非只验证正例。
         for index in 0_u8..60 {
-            let value = SexagenaryCycle::try_from(index).unwrap();
+            let value = Ganzhi::try_from(index).unwrap();
             assert_eq!(xun.contains(value), expected.contains(&value));
         }
     }

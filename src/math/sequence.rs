@@ -29,18 +29,18 @@ pub const fn checked_forward_distance(from: u8, to: u8, period: u8) -> Option<u8
 /// 周期的非零性由关联常量的类型保证：
 ///
 /// ```compile_fail
-/// use matharts_core::CyclicRing;
+/// use matharts_core::CyclicSequence;
 /// use core::num::NonZeroU8;
 /// #[derive(Clone, Copy, PartialEq, Eq)]
 /// struct Invalid;
-/// impl CyclicRing for Invalid {
+/// impl CyclicSequence for Invalid {
 ///     const MODULUS: NonZeroU8 = NonZeroU8::new(0).unwrap();
 ///     fn from_index(_: u8) -> Self { Self }
 ///     fn index(self) -> u8 { 0 }
 /// }
 /// let _ = Invalid.offset(1);
 /// ```
-pub trait CyclicRing: Copy + Eq + Sized {
+pub trait CyclicSequence: Copy + Eq + Sized {
     /// 非零周期。
     const MODULUS: NonZeroU8;
 
@@ -78,7 +78,7 @@ pub trait CyclicRing: Copy + Eq + Sized {
     /// 从自身到目标的正向距离，范围为 `0..MODULUS`；不是有符号差值。
     ///
     /// ```
-    /// use matharts_core::{Branch, CyclicRing, Stem};
+    /// use matharts_core::{Branch, CyclicSequence, Stem};
     /// assert_eq!(Stem::Jia.distance_to(Stem::Gui), 9);
     /// assert_eq!(Stem::Gui.distance_to(Stem::Jia), 1);
     /// assert_eq!(Branch::Hai.distance_to(Branch::Zi), 1);

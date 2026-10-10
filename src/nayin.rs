@@ -1,6 +1,6 @@
 //! 三十种纳音身份及其干支配对、五行；不包含取象吉凶规则。
 
-use crate::{CyclicRing, Element, InvalidIndex, SexagenaryCycle};
+use crate::{CyclicSequence, Element, Ganzhi, InvalidIndex};
 use core::{fmt, str::FromStr};
 
 /// 输出采用表的精确中文名称，与 [`FromStr`] 的输入一致。
@@ -28,9 +28,21 @@ impl FromStr for Nayin {
 /// 名称采用当前纳音表的显示用字；文献异写不作为编码别名。
 /// 身份索引只作稳定编号，本类型不提供循环操作。
 ///
+/// # 采用定义与证据状态
+/// 干支配对与五行的来源版本为[《三命通会》四库全书本卷一《论纳音取象》转录](https://zh.wikisource.org/wiki/三命通會_(四庫全書本)/卷01#論納音取象)。
+/// 消费语义是调用方已确定合法干支后，查询纳音身份及其五行；不从日期选定干支，
+/// 也不判断该篇的取象吉凶。用于紫微定局等场景时，命宫干支与局数映射由调用方确定。
+/// 同输入对照：甲子、乙丑均为海中金和金行；甲辰、乙巳均为覆灯火和火行。
+/// 当前精确中文名称采用本库冻结样本的用字，不声称与转录逐字相同：
+/// 转录有白鑞金、金泊金、井泉水、路傍土，本库分别显示白蜡金、金箔金、泉中水、路旁土。
+/// 这些异写不作为中文解析或机器编码的别名，也不改变干支配对与五行。
+/// `tests/identities.rs` 与 `tests/text.rs` 分别锁定三十种身份及当前名称。
+/// 全部条目的影印本校勘、用字版本的进一步出处，以及跨体系实际消费方
+/// 的同输入对照证据待补；独立样本测试不替代这些文献与消费证据。
+///
 /// ```
-/// use matharts_core::{Branch, Element, Nayin, SexagenaryCycle, Stem};
-/// let jia_zi = SexagenaryCycle::new(Stem::Jia, Branch::Zi).unwrap();
+/// use matharts_core::{Branch, Element, Nayin, Ganzhi, Stem};
+/// let jia_zi = Ganzhi::new(Stem::Jia, Branch::Zi).unwrap();
 /// assert_eq!(jia_zi.nayin(), Nayin::HaiZhongJin);
 /// assert_eq!(jia_zi.nayin().element(), Element::Metal);
 /// assert_eq!(Nayin::HaiZhongJin.name(), "海中金");
@@ -219,12 +231,9 @@ impl Nayin {
     }
 
     /// 对应的两个干支，按六十甲子顺序返回。
-    pub fn ganzhi_pair(self) -> [SexagenaryCycle; 2] {
+    pub fn ganzhi_pair(self) -> [Ganzhi; 2] {
         let first = self.index() * 2;
-        [
-            SexagenaryCycle::from_index(first),
-            SexagenaryCycle::from_index(first + 1),
-        ]
+        [Ganzhi::from_index(first), Ganzhi::from_index(first + 1)]
     }
 }
 
@@ -248,7 +257,7 @@ impl TryFrom<u8> for Nayin {
 use serde::de::{self, EnumAccess, VariantAccess};
 
 #[cfg(feature = "serde")]
-const NAYIN_CODES: &[&str] = &[
+const NAYIN_CODES: &[&str; Nayin::ALL.len()] = &[
     "HaiZhongJin",
     "LuZhongHuo",
     "DaLinMu",
@@ -297,6 +306,7 @@ impl de::Visitor<'_> for NayinIdentifier {
         f.write_str("variant identifier")
     }
     fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
+        // 固定代码直接匹配，避免按名单位置逐个比较。
         match value {
             "HaiZhongJin" => Ok(Nayin::HaiZhongJin),
             "LuZhongHuo" => Ok(Nayin::LuZhongHuo),

@@ -1,13 +1,11 @@
 //! 八卦与六爻结构的独立固定预期及全集验收。
 
-use Primitive::{Yang, Yin};
-use matharts_core::{
-    Hexagram, HexagramPosition, InvalidIndex, Primitive, Trigram, TrigramPosition,
-};
+use YinYang::{Yang, Yin};
+use matharts_core::{Hexagram, HexagramPosition, InvalidIndex, Trigram, TrigramPosition, YinYang};
 use std::collections::HashSet;
 
 // 不从生产查询生成三爻预期；排列仅用作 bits 升序的技术遍历。
-const CASES: [(Trigram, &str, [Primitive; 3]); 8] = [
+const CASES: [(Trigram, &str, [YinYang; 3]); 8] = [
     (Trigram::Kun, "坤", [Yin, Yin, Yin]),
     (Trigram::Zhen, "震", [Yang, Yin, Yin]),
     (Trigram::Kan, "坎", [Yin, Yang, Yin]),
@@ -35,7 +33,7 @@ const HEXAGRAM_POSITIONS: [HexagramPosition; 6] = [
 
 // 编译时调用，避免只在运行时验证后误称接口支持 const。
 const TAI: Hexagram = Hexagram::from_trigrams(Trigram::Qian, Trigram::Kun);
-const CONST_LINES: [Primitive; 6] = TAI
+const CONST_LINES: [YinYang; 6] = TAI
     .reverse_lines()
     .complement()
     .with_line(HexagramPosition::First, Yin)
@@ -64,8 +62,8 @@ fn fixed_shapes_and_const_construction() {
     assert_eq!(CONST_LINES, [Yang, Yang, Yang, Yin, Yin, Yin]);
     assert_eq!(CONST_TRIGRAM, Trigram::Qian);
     // 已有阴阳编码不可为了新 bits 约定而倒置。
-    assert_eq!(Primitive::Yang as u8, 0);
-    assert_eq!(Primitive::Yin as u8, 1);
+    assert_eq!(YinYang::Yang as u8, 0);
+    assert_eq!(YinYang::Yin as u8, 1);
     assert_eq!(TAI.bits(), 7);
     assert_eq!(TAI.reverse_lines().bits(), 56);
     assert_eq!(Trigram::Zhen.reverse_lines(), Trigram::Gen);
@@ -161,7 +159,7 @@ fn all_line_queries_updates_and_transformations_match_arrays() {
         let mut reversed = lines;
         reversed.reverse();
         assert_eq!(value.reverse_lines().lines(), reversed);
-        assert_eq!(value.complement().lines(), lines.map(Primitive::invert));
+        assert_eq!(value.complement().lines(), lines.map(YinYang::invert));
         assert_eq!(value.reverse_lines().reverse_lines(), value);
         assert_eq!(value.complement().complement(), value);
         for p in TRIGRAM_POSITIONS {
@@ -190,7 +188,7 @@ fn all_line_queries_updates_and_transformations_match_arrays() {
         let mut reversed = lines;
         reversed.reverse();
         assert_eq!(value.reverse_lines().lines(), reversed);
-        assert_eq!(value.complement().lines(), lines.map(Primitive::invert));
+        assert_eq!(value.complement().lines(), lines.map(YinYang::invert));
         assert_eq!(value.reverse_lines().reverse_lines(), value);
         assert_eq!(value.complement().complement(), value);
         for p in HEXAGRAM_POSITIONS {

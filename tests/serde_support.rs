@@ -2,7 +2,7 @@
 #![cfg(feature = "serde")]
 
 use core::fmt;
-use matharts_core::{CyclicRing, Stem};
+use matharts_core::{CyclicSequence, Stem};
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
 mod support;

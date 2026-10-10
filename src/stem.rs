@@ -2,8 +2,8 @@
 
 use crate::element::Element;
 use crate::error::InvalidIndex;
-use crate::math::CyclicRing;
-use crate::primitive::Primitive;
+use crate::math::CyclicSequence;
+use crate::yin_yang::YinYang;
 use core::{
     fmt,
     ops::{Add, Sub},
@@ -38,7 +38,7 @@ pub enum Stem {
     Gui = 9,
 }
 
-impl CyclicRing for Stem {
+impl CyclicSequence for Stem {
     const MODULUS: core::num::NonZeroU8 = core::num::NonZeroU8::new(10).unwrap();
 
     #[inline]
@@ -69,11 +69,11 @@ impl Stem {
 
     /// 阴阳极性：传统一基序数奇阳偶阴，对应零基索引偶阳奇阴。
     #[inline]
-    pub const fn primitive(self) -> Primitive {
+    pub const fn yin_yang(self) -> YinYang {
         if (self as u8).is_multiple_of(2) {
-            Primitive::Yang
+            YinYang::Yang
         } else {
-            Primitive::Yin
+            YinYang::Yin
         }
     }
 
@@ -159,7 +159,7 @@ impl Sub<i32> for Stem {
     type Output = Self;
     #[inline]
     fn sub(self, rhs: i32) -> Self::Output {
-        Self::from_index(crate::math::ring::wrap(
+        Self::from_index(crate::math::sequence::wrap(
             i64::from(self.index()) - i64::from(rhs),
             Self::MODULUS,
         ))
@@ -227,7 +227,7 @@ impl FromStr for Stem {
 impl<'de> serde::Deserialize<'de> for Stem {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         use serde::de::{self, EnumAccess, VariantAccess};
-        const CODES: &[&str] = &[
+        const CODES: &[&str; Stem::ALL.len()] = &[
             "Jia", "Yi", "Bing", "Ding", "Wu", "Ji", "Geng", "Xin", "Ren", "Gui",
         ];
         struct Identifier;
@@ -246,19 +246,11 @@ impl<'de> serde::Deserialize<'de> for Stem {
                 f.write_str("variant identifier")
             }
             fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
-                match value {
-                    "Jia" => Ok(Stem::Jia),
-                    "Yi" => Ok(Stem::Yi),
-                    "Bing" => Ok(Stem::Bing),
-                    "Ding" => Ok(Stem::Ding),
-                    "Wu" => Ok(Stem::Wu),
-                    "Ji" => Ok(Stem::Ji),
-                    "Geng" => Ok(Stem::Geng),
-                    "Xin" => Ok(Stem::Xin),
-                    "Ren" => Ok(Stem::Ren),
-                    "Gui" => Ok(Stem::Gui),
-                    _ => Err(E::unknown_variant(value, CODES)),
-                }
+                CODES
+                    .iter()
+                    .position(|code| *code == value)
+                    .map(|index| Stem::ALL[index])
+                    .ok_or_else(|| E::unknown_variant(value, CODES))
             }
             fn visit_u64<E: de::Error>(self, value: u64) -> Result<Self::Value, E> {
                 u8::try_from(value)
@@ -449,7 +441,8 @@ impl TryFrom<u8> for FiveCombination {
 impl<'de> serde::Deserialize<'de> for FiveCombination {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         use serde::de::{self, EnumAccess, VariantAccess};
-        const CODES: &[&str] = &["JiaJi", "YiGeng", "BingXin", "DingRen", "WuGui"];
+        const CODES: &[&str; FiveCombination::ALL.len()] =
+            &["JiaJi", "YiGeng", "BingXin", "DingRen", "WuGui"];
         struct Identifier;
         impl<'de> de::DeserializeSeed<'de> for Identifier {
             type Value = FiveCombination;
@@ -466,14 +459,11 @@ impl<'de> serde::Deserialize<'de> for FiveCombination {
                 f.write_str("variant identifier")
             }
             fn visit_str<E: de::Error>(self, value: &str) -> Result<FiveCombination, E> {
-                match value {
-                    "JiaJi" => Ok(FiveCombination::JiaJi),
-                    "YiGeng" => Ok(FiveCombination::YiGeng),
-                    "BingXin" => Ok(FiveCombination::BingXin),
-                    "DingRen" => Ok(FiveCombination::DingRen),
-                    "WuGui" => Ok(FiveCombination::WuGui),
-                    _ => Err(E::unknown_variant(value, CODES)),
-                }
+                CODES
+                    .iter()
+                    .position(|code| *code == value)
+                    .map(|index| FiveCombination::ALL[index])
+                    .ok_or_else(|| E::unknown_variant(value, CODES))
             }
             fn visit_u64<E: de::Error>(self, value: u64) -> Result<FiveCombination, E> {
                 u8::try_from(value)

@@ -1,12 +1,12 @@
 {
-  "schema_version": 2,
-  "Primitive": ["Yang", "Yin"],
+  "schema_version": 3,
+  "YinYang": ["Yang", "Yin"],
   "Element": ["Wood", "Fire", "Earth", "Metal", "Water"],
   "ElementRelation": ["Same", "Generates", "Overcomes", "OvercomeBy", "GeneratedBy"],
   "Stem": ["Jia", "Yi", "Bing", "Ding", "Wu", "Ji", "Geng", "Xin", "Ren", "Gui"],
   "Branch": ["Zi", "Chou", "Yin", "Mao", "Chen", "Si", "Wu", "Wei", "Shen", "You", "Xu", "Hai"],
-  "God": ["BiJian", "JieCai", "ShiShen", "ShangGuan", "PianCai", "ZhengCai", "QiSha", "ZhengGuan", "PianYin", "ZhengYin"],
-  "Growth": ["ChangSheng", "MuYu", "GuanDai", "LinGuan", "DiWang", "Shuai", "Bing", "Si", "Mu", "Jue", "Tai", "Yang"],
+  "TenGod": ["BiJian", "JieCai", "ShiShen", "ShangGuan", "PianCai", "ZhengCai", "QiSha", "ZhengGuan", "PianYin", "ZhengYin"],
+  "GrowthPhase": ["ChangSheng", "MuYu", "GuanDai", "LinGuan", "DiWang", "Shuai", "Bing", "Si", "Mu", "Jue", "Tai", "Yang"],
   "HiddenStems": {"primary":"Ji","secondary":"Gui","tertiary":"Xin"},
   "HiddenStemsSingle": {"primary":"Gui","secondary":null,"tertiary":null},
   "Ganzhi": [

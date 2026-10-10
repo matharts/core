@@ -1,7 +1,7 @@
 //! 严格构造、周期运算、固定属性及当前入口的公共契约。
 use core::num::NonZeroU8;
 use matharts_core::{
-    Branch, CyclicRing, Element, ElementRelation, Growth, Primitive, SexagenaryCycle, Stem, Xun,
+    Branch, CyclicSequence, Element, ElementRelation, Ganzhi, GrowthPhase, Stem, Xun, YinYang,
     checked_forward_distance, forward_distance,
 };
 use proptest::prelude::*;
@@ -33,7 +33,7 @@ const BRANCHES: [Branch; 12] = [
     Branch::Hai,
 ];
 
-fn check_cycle_boundary<T: CyclicRing + TryFrom<u8>>() {
+fn check_cycle_boundary<T: CyclicSequence + TryFrom<u8>>() {
     for index in 0..=u8::MAX {
         assert_eq!(T::try_from(index).is_ok(), index < T::MODULUS.get());
         assert_eq!(T::try_from_index(index).is_ok(), index < T::MODULUS.get());
@@ -45,8 +45,8 @@ fn check_cycle_boundary<T: CyclicRing + TryFrom<u8>>() {
 fn strict_and_wrapping_construction_are_distinct() {
     check_cycle_boundary::<Stem>();
     check_cycle_boundary::<Branch>();
-    check_cycle_boundary::<Growth>();
-    check_cycle_boundary::<SexagenaryCycle>();
+    check_cycle_boundary::<GrowthPhase>();
+    check_cycle_boundary::<Ganzhi>();
     for index in 0..=u8::MAX {
         assert_eq!(Element::try_from(index).is_ok(), index < 5);
         assert_eq!(Element::from_index(index).index(), index % 5);
@@ -63,7 +63,7 @@ fn zero_period_is_rejected_and_distance_is_directed() {
 }
 
 #[test]
-fn primitive_and_elements_match_fixed_attributes() {
+fn yin_yang_and_elements_match_fixed_attributes() {
     use Element::{Earth, Fire, Metal, Water, Wood};
     let stems: [Element; 10] = [
         Wood, Wood, Fire, Fire, Earth, Earth, Metal, Metal, Water, Water,
@@ -74,21 +74,21 @@ fn primitive_and_elements_match_fixed_attributes() {
     for (index, expected) in (0_u8..10).zip(stems) {
         assert_eq!(Stem::try_from(index).unwrap().element(), expected);
         assert_eq!(
-            Stem::try_from(index).unwrap().primitive().is_yang(),
+            Stem::try_from(index).unwrap().yin_yang().is_yang(),
             index.is_multiple_of(2)
         );
     }
     for (index, expected) in (0_u8..12).zip(branches) {
         assert_eq!(Branch::try_from(index).unwrap().element(), expected);
         assert_eq!(
-            Branch::try_from(index).unwrap().primitive().is_yang(),
+            Branch::try_from(index).unwrap().yin_yang().is_yang(),
             index.is_multiple_of(2)
         );
     }
-    assert_eq!(Primitive::Yang.invert(), Primitive::Yin);
-    assert_eq!(Primitive::Yin.invert(), Primitive::Yang);
-    assert!(!Primitive::Yang.is_yin());
-    assert!(Primitive::Yin.is_yin());
+    assert_eq!(YinYang::Yang.invert(), YinYang::Yin);
+    assert_eq!(YinYang::Yin.invert(), YinYang::Yang);
+    assert!(!YinYang::Yang.is_yin());
+    assert!(YinYang::Yin.is_yin());
 }
 
 #[test]
@@ -191,7 +191,7 @@ fn distance_to_preserves_direction_for_every_pair() {
 
 fn check_integer_steps<T>(values: &[T], delta: i32)
 where
-    T: CyclicRing
+    T: CyclicSequence
         + core::fmt::Debug
         + core::ops::Add<i32, Output = T>
         + core::ops::Sub<i32, Output = T>
@@ -225,18 +225,18 @@ fn check_all_integer_steps(delta: i32) {
     check_integer_steps(&BRANCHES, delta);
     check_integer_steps(
         &[
-            Growth::ChangSheng,
-            Growth::MuYu,
-            Growth::GuanDai,
-            Growth::LinGuan,
-            Growth::DiWang,
-            Growth::Shuai,
-            Growth::Bing,
-            Growth::Si,
-            Growth::Mu,
-            Growth::Jue,
-            Growth::Tai,
-            Growth::Yang,
+            GrowthPhase::ChangSheng,
+            GrowthPhase::MuYu,
+            GrowthPhase::GuanDai,
+            GrowthPhase::LinGuan,
+            GrowthPhase::DiWang,
+            GrowthPhase::Shuai,
+            GrowthPhase::Bing,
+            GrowthPhase::Si,
+            GrowthPhase::Mu,
+            GrowthPhase::Jue,
+            GrowthPhase::Tai,
+            GrowthPhase::Yang,
         ],
         delta,
     );
@@ -252,8 +252,8 @@ fn check_all_integer_steps(delta: i32) {
         delta,
     );
     // 独立的两个周期计数器构造合法甲子序列；不调用被测步进生成预期。
-    let ganzhi: [SexagenaryCycle; 60] =
-        core::array::from_fn(|i| SexagenaryCycle::new(STEMS[i % 10], BRANCHES[i % 12]).unwrap());
+    let ganzhi: [Ganzhi; 60] =
+        core::array::from_fn(|i| Ganzhi::new(STEMS[i % 10], BRANCHES[i % 12]).unwrap());
     check_integer_steps(&ganzhi, delta);
 }
 
@@ -302,7 +302,7 @@ fn all_sixty_values_have_consistent_xun_membership() {
         (Zi, Chou),
     ];
     for index in 0_u8..60 {
-        let value = SexagenaryCycle::try_from(index).unwrap();
+        let value = Ganzhi::try_from(index).unwrap();
         let xun = usize::from(index / 10);
         assert_eq!(value.xun().leader().branch(), leaders[xun]);
         assert_eq!(value.xun().void_branches(), missing[xun]);
@@ -319,7 +319,7 @@ fn all_sixty_values_have_consistent_xun_membership() {
 proptest! {
     #[test]
     fn arbitrary_signed_offsets_match_wide_integer_math(index in 0_u8..60, delta in any::<i32>()) {
-        let actual = SexagenaryCycle::try_from(index).unwrap().offset(delta);
+        let actual = Ganzhi::try_from(index).unwrap().offset(delta);
         let expected = (i64::from(index) + i64::from(delta)).rem_euclid(60);
         prop_assert_eq!(i64::from(actual.index()), expected);
     }
@@ -330,7 +330,7 @@ fn custom_cycle_uses_nonzero_period_and_strict_indices() {
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     struct Weekday(u8);
 
-    impl CyclicRing for Weekday {
+    impl CyclicSequence for Weekday {
         const MODULUS: NonZeroU8 = NonZeroU8::new(7).unwrap();
         fn from_index(idx: u8) -> Self {
             Self(idx % Self::MODULUS.get())

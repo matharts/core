@@ -1,15 +1,15 @@
 //! 当前编码协议的独立样本验收，不通过当前编码器生成预期。
 #![cfg(feature = "serde")]
 use matharts_core::{
-    Branch, Element, ElementRelation, God, Growth, HiddenStems, Primitive, SexagenaryCycle, Stem,
+    Branch, Element, ElementRelation, Ganzhi, GrowthPhase, HiddenStems, Stem, TenGod, YinYang,
 };
 use matharts_core::{Nayin, Xun};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 
 fn fixture() -> Value {
-    let value: Value = serde_json::from_str(include_str!("fixtures/encoding-v2.json")).unwrap();
-    assert_eq!(value["schema_version"], 2);
+    let value: Value = serde_json::from_str(include_str!("fixtures/encoding-v3.json")).unwrap();
+    assert_eq!(value["schema_version"], 3);
     assert_frozen_ganzhi_pairs(&value);
     value
 }
@@ -68,7 +68,7 @@ fn check<T: Serialize + DeserializeOwned + PartialEq + core::fmt::Debug>(key: &s
 
 #[test]
 fn every_enum_matches_current_frozen_codes() {
-    check("Primitive", &[Primitive::Yang, Primitive::Yin]);
+    check("YinYang", &[YinYang::Yang, YinYang::Yin]);
     check(
         "Element",
         &[
@@ -92,35 +92,35 @@ fn every_enum_matches_current_frozen_codes() {
     check("Stem", &stems());
     check("Branch", &branches());
     check(
-        "God",
+        "TenGod",
         &[
-            God::BiJian,
-            God::JieCai,
-            God::ShiShen,
-            God::ShangGuan,
-            God::PianCai,
-            God::ZhengCai,
-            God::QiSha,
-            God::ZhengGuan,
-            God::PianYin,
-            God::ZhengYin,
+            TenGod::BiJian,
+            TenGod::JieCai,
+            TenGod::ShiShen,
+            TenGod::ShangGuan,
+            TenGod::PianCai,
+            TenGod::ZhengCai,
+            TenGod::QiSha,
+            TenGod::ZhengGuan,
+            TenGod::PianYin,
+            TenGod::ZhengYin,
         ],
     );
     check(
-        "Growth",
+        "GrowthPhase",
         &[
-            Growth::ChangSheng,
-            Growth::MuYu,
-            Growth::GuanDai,
-            Growth::LinGuan,
-            Growth::DiWang,
-            Growth::Shuai,
-            Growth::Bing,
-            Growth::Si,
-            Growth::Mu,
-            Growth::Jue,
-            Growth::Tai,
-            Growth::Yang,
+            GrowthPhase::ChangSheng,
+            GrowthPhase::MuYu,
+            GrowthPhase::GuanDai,
+            GrowthPhase::LinGuan,
+            GrowthPhase::DiWang,
+            GrowthPhase::Shuai,
+            GrowthPhase::Bing,
+            GrowthPhase::Si,
+            GrowthPhase::Mu,
+            GrowthPhase::Jue,
+            GrowthPhase::Tai,
+            GrowthPhase::Yang,
         ],
     );
 }
@@ -167,13 +167,10 @@ fn sixty_ganzhi_match_current_two_field_representation() {
         // 以固定代码位置查测试中的显式变体数组，避免被测解码器生成预期值。
         let s = stems()[s_codes.iter().position(|v| *v == pair[0]).unwrap()];
         let b = branches()[b_codes.iter().position(|v| *v == pair[1]).unwrap()];
-        let expected = SexagenaryCycle::new(s, b).unwrap();
+        let expected = Ganzhi::new(s, b).unwrap();
         let wire = json!({"stem":pair[0],"branch":pair[1]});
         assert_eq!(serde_json::to_value(expected).unwrap(), wire);
-        assert_eq!(
-            serde_json::from_value::<SexagenaryCycle>(wire).unwrap(),
-            expected
-        );
+        assert_eq!(serde_json::from_value::<Ganzhi>(wire).unwrap(), expected);
     }
 }
 
@@ -226,7 +223,7 @@ fn hidden_stems_match_current_optional_fields_and_reject_invalid_pairs() {
     }
     for invalid in invalid_ganzhi {
         assert!(
-            serde_json::from_value::<SexagenaryCycle>(invalid.clone()).is_err(),
+            serde_json::from_value::<Ganzhi>(invalid.clone()).is_err(),
             "invalid_ganzhi sample unexpectedly accepted: {invalid}"
         );
     }
@@ -266,12 +263,12 @@ fn check_model<
 }
 
 #[test]
-fn primitive_models_match_current_variant_indices() {
+fn yin_yang_models_match_current_variant_indices() {
     let old = fixture();
     check_model(
-        "Primitive",
-        &[(Primitive::Yang, "Yang"), (Primitive::Yin, "Yin")],
-        &old["Primitive"],
+        "YinYang",
+        &[(YinYang::Yang, "Yang"), (YinYang::Yin, "Yin")],
+        &old["YinYang"],
     );
     check_model(
         "Element",
@@ -335,38 +332,38 @@ fn stem_branch_and_rule_models_match_current_variant_indices() {
         &old["Branch"],
     );
     check_model(
-        "God",
+        "TenGod",
         &[
-            (God::BiJian, "BiJian"),
-            (God::JieCai, "JieCai"),
-            (God::ShiShen, "ShiShen"),
-            (God::ShangGuan, "ShangGuan"),
-            (God::PianCai, "PianCai"),
-            (God::ZhengCai, "ZhengCai"),
-            (God::QiSha, "QiSha"),
-            (God::ZhengGuan, "ZhengGuan"),
-            (God::PianYin, "PianYin"),
-            (God::ZhengYin, "ZhengYin"),
+            (TenGod::BiJian, "BiJian"),
+            (TenGod::JieCai, "JieCai"),
+            (TenGod::ShiShen, "ShiShen"),
+            (TenGod::ShangGuan, "ShangGuan"),
+            (TenGod::PianCai, "PianCai"),
+            (TenGod::ZhengCai, "ZhengCai"),
+            (TenGod::QiSha, "QiSha"),
+            (TenGod::ZhengGuan, "ZhengGuan"),
+            (TenGod::PianYin, "PianYin"),
+            (TenGod::ZhengYin, "ZhengYin"),
         ],
-        &old["God"],
+        &old["TenGod"],
     );
     check_model(
-        "Growth",
+        "GrowthPhase",
         &[
-            (Growth::ChangSheng, "ChangSheng"),
-            (Growth::MuYu, "MuYu"),
-            (Growth::GuanDai, "GuanDai"),
-            (Growth::LinGuan, "LinGuan"),
-            (Growth::DiWang, "DiWang"),
-            (Growth::Shuai, "Shuai"),
-            (Growth::Bing, "Bing"),
-            (Growth::Si, "Si"),
-            (Growth::Mu, "Mu"),
-            (Growth::Jue, "Jue"),
-            (Growth::Tai, "Tai"),
-            (Growth::Yang, "Yang"),
+            (GrowthPhase::ChangSheng, "ChangSheng"),
+            (GrowthPhase::MuYu, "MuYu"),
+            (GrowthPhase::GuanDai, "GuanDai"),
+            (GrowthPhase::LinGuan, "LinGuan"),
+            (GrowthPhase::DiWang, "DiWang"),
+            (GrowthPhase::Shuai, "Shuai"),
+            (GrowthPhase::Bing, "Bing"),
+            (GrowthPhase::Si, "Si"),
+            (GrowthPhase::Mu, "Mu"),
+            (GrowthPhase::Jue, "Jue"),
+            (GrowthPhase::Tai, "Tai"),
+            (GrowthPhase::Yang, "Yang"),
         ],
-        &old["Growth"],
+        &old["GrowthPhase"],
     );
 }
 
@@ -425,12 +422,12 @@ fn identity_models_match_current_variant_indices() {
 
 #[test]
 fn current_struct_models_use_named_fields_and_explicit_optional_slots() {
-    let ganzhi = SexagenaryCycle::new(Stem::Jia, Branch::Zi).unwrap();
+    let ganzhi = Ganzhi::new(Stem::Jia, Branch::Zi).unwrap();
     assert_tokens(
         &ganzhi.compact(),
         &[
             Token::Struct {
-                name: "SexagenaryCycle",
+                name: "Ganzhi",
                 len: 2,
             },
             Token::Str("stem"),
@@ -504,25 +501,16 @@ fn record_json_rejects_legacy_shapes_unknown_missing_and_duplicate_fields() {
         r#"{"stem":"Jia"}"#,
         r#"{"branch":"Zi"}"#,
     ] {
-        assert!(
-            serde_json::from_str::<SexagenaryCycle>(input).is_err(),
-            "{input}"
-        );
+        assert!(serde_json::from_str::<Ganzhi>(input).is_err(), "{input}");
         let value: Value = serde_json::from_str(input).unwrap();
-        assert!(
-            serde_json::from_value::<SexagenaryCycle>(value).is_err(),
-            "{input}"
-        );
+        assert!(serde_json::from_value::<Ganzhi>(value).is_err(), "{input}");
     }
     // Value 会合并重复键；重复字段必须通过原始 JSON 文本验收。
     for input in [
         r#"{"stem":"Jia","stem":"Jia","branch":"Zi"}"#,
         r#"{"stem":"Jia","branch":"Zi","branch":"Zi"}"#,
     ] {
-        assert!(
-            serde_json::from_str::<SexagenaryCycle>(input).is_err(),
-            "{input}"
-        );
+        assert!(serde_json::from_str::<Ganzhi>(input).is_err(), "{input}");
     }
     let custom = HiddenStems {
         primary: Stem::Jia,

@@ -2,19 +2,22 @@
 
 use core::{fmt, str::FromStr};
 
-/// 基础二元极性（阴阳原语）
+/// 阴阳二值；不包含强弱、性别或爻的动静。
+///
+/// 枚举编号为阳 0、阴 1；卦结构的位值为阳 1、阴 0。
+/// 两者是不同编码，不能用本枚举的整数转换代替爻位编码。
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 #[must_use]
-pub enum Primitive {
+pub enum YinYang {
     /// 阳
     Yang = 0,
     /// 阴
     Yin = 1,
 }
 
-impl Primitive {
+impl YinYang {
     /// 全部阴阳值，按固定编码顺序排列。
     pub const ALL: [Self; 2] = [Self::Yang, Self::Yin];
 
@@ -49,34 +52,34 @@ impl Primitive {
 }
 
 /// 输出精确中文名称，与 [`FromStr`] 的输入一致。
-impl fmt::Display for Primitive {
+impl fmt::Display for YinYang {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.name())
     }
 }
 
 /// 只接受精确中文阴阳名，不裁剪空白或接受别名。
-impl FromStr for Primitive {
+impl FromStr for YinYang {
     type Err = crate::ParseError;
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         Self::ALL
             .into_iter()
             .find(|value| value.name() == input)
-            .ok_or(Self::Err::InvalidPrimitive)
+            .ok_or(Self::Err::InvalidYinYang)
     }
 }
 
 // 可读格式只接受代码字符串；紧凑格式使用原生枚举模型。
 
 #[cfg(feature = "serde")]
-impl<'de> serde::Deserialize<'de> for Primitive {
+impl<'de> serde::Deserialize<'de> for YinYang {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         use serde::de::{self, EnumAccess, VariantAccess};
-        const CODES: &[&str] = &["Yang", "Yin"];
+        const CODES: &[&str; YinYang::ALL.len()] = &["Yang", "Yin"];
         struct Identifier;
         impl<'de> de::DeserializeSeed<'de> for Identifier {
-            type Value = Primitive;
+            type Value = YinYang;
             fn deserialize<D: serde::Deserializer<'de>>(
                 self,
                 d: D,
@@ -85,26 +88,28 @@ impl<'de> serde::Deserialize<'de> for Primitive {
             }
         }
         impl de::Visitor<'_> for Identifier {
-            type Value = Primitive;
+            type Value = YinYang;
             fn expecting(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 f.write_str("variant identifier")
             }
             fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
-                match value {
-                    "Yang" => Ok(Primitive::Yang),
-                    "Yin" => Ok(Primitive::Yin),
-                    _ => Err(E::unknown_variant(value, CODES)),
-                }
+                CODES
+                    .iter()
+                    .position(|code| *code == value)
+                    .map(|index| YinYang::ALL[index])
+                    .ok_or_else(|| E::unknown_variant(value, CODES))
             }
             fn visit_u64<E: de::Error>(self, value: u64) -> Result<Self::Value, E> {
-                match value {
-                    0 => Ok(Primitive::Yang),
-                    1 => Ok(Primitive::Yin),
-                    _ => Err(E::invalid_value(
-                        de::Unexpected::Unsigned(value),
-                        &"variant index 0 <= i < 2",
-                    )),
-                }
+                usize::try_from(value)
+                    .ok()
+                    .and_then(|index| YinYang::ALL.get(index))
+                    .copied()
+                    .ok_or_else(|| {
+                        E::invalid_value(
+                            de::Unexpected::Unsigned(value),
+                            &"variant index 0 <= i < 2",
+                        )
+                    })
             }
             fn visit_bytes<E: de::Error>(self, value: &[u8]) -> Result<Self::Value, E> {
                 match core::str::from_utf8(value) {
@@ -115,9 +120,9 @@ impl<'de> serde::Deserialize<'de> for Primitive {
         }
         struct CodeVisitor;
         impl de::Visitor<'_> for CodeVisitor {
-            type Value = Primitive;
+            type Value = YinYang;
             fn expecting(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                f.write_str("Primitive code string")
+                f.write_str("YinYang code string")
             }
             fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
                 de::Visitor::visit_str(Identifier, value)
@@ -125,9 +130,9 @@ impl<'de> serde::Deserialize<'de> for Primitive {
         }
         struct EnumVisitor;
         impl<'de> de::Visitor<'de> for EnumVisitor {
-            type Value = Primitive;
+            type Value = YinYang;
             fn expecting(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                f.write_str("enum Primitive")
+                f.write_str("enum YinYang")
             }
             fn visit_enum<A: EnumAccess<'de>>(self, data: A) -> Result<Self::Value, A::Error> {
                 let (value, variant) = data.variant_seed(Identifier)?;
@@ -138,7 +143,7 @@ impl<'de> serde::Deserialize<'de> for Primitive {
         if deserializer.is_human_readable() {
             deserializer.deserialize_str(CodeVisitor)
         } else {
-            deserializer.deserialize_enum("Primitive", CODES, EnumVisitor)
+            deserializer.deserialize_enum("YinYang", CODES, EnumVisitor)
         }
     }
 }

@@ -1,31 +1,31 @@
-//! 合法六十甲子值、旬内集合及纳音五行查询。
+//! 合法六十甲子值、旬与纳音身份查询。
 
 use crate::branch::Branch;
-use crate::math::CyclicRing;
+use crate::math::CyclicSequence;
 use crate::stem::Stem;
 use crate::{InvalidGanzhi, InvalidIndex, Nayin, ParseError, Xun};
 use core::{fmt, str::FromStr};
 
 /// 六十甲子中的一个合法干支值，周期为 60。
 ///
-/// 内部保证阴阳同性公理：天干与地支同阳或同阴。
+/// 天干与地支必须同阳或同阴。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
-pub struct SexagenaryCycle {
+pub struct Ganzhi {
     stem: Stem,
     branch: Branch,
 }
 
 #[cfg(feature = "serde")]
 #[derive(serde::Deserialize)]
-#[serde(rename = "SexagenaryCycle", deny_unknown_fields)]
+#[serde(rename = "Ganzhi", deny_unknown_fields)]
 struct RawGanzhi {
     stem: Stem,
     branch: Branch,
 }
 
 #[cfg(feature = "serde")]
-impl TryFrom<RawGanzhi> for SexagenaryCycle {
+impl TryFrom<RawGanzhi> for Ganzhi {
     type Error = InvalidGanzhi;
     fn try_from(raw: RawGanzhi) -> Result<Self, Self::Error> {
         Self::try_from((raw.stem, raw.branch))
@@ -33,14 +33,14 @@ impl TryFrom<RawGanzhi> for SexagenaryCycle {
 }
 
 #[cfg(feature = "serde")]
-impl<'de> serde::Deserialize<'de> for SexagenaryCycle {
+impl<'de> serde::Deserialize<'de> for Ganzhi {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         use serde::de::{self, MapAccess, Visitor};
         struct RecordVisitor;
         impl<'de> Visitor<'de> for RecordVisitor {
             type Value = RawGanzhi;
             fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                f.write_str("SexagenaryCycle object with stem and branch")
+                f.write_str("Ganzhi object with stem and branch")
             }
             fn visit_map<A: MapAccess<'de>>(self, map: A) -> Result<Self::Value, A::Error> {
                 serde::Deserialize::deserialize(de::value::MapAccessDeserializer::new(map))
@@ -55,21 +55,21 @@ impl<'de> serde::Deserialize<'de> for SexagenaryCycle {
     }
 }
 
-impl TryFrom<(Stem, Branch)> for SexagenaryCycle {
+impl TryFrom<(Stem, Branch)> for Ganzhi {
     type Error = InvalidGanzhi;
     fn try_from((stem, branch): (Stem, Branch)) -> Result<Self, Self::Error> {
         Self::new(stem, branch).ok_or(InvalidGanzhi)
     }
 }
 
-impl TryFrom<u8> for SexagenaryCycle {
+impl TryFrom<u8> for Ganzhi {
     type Error = InvalidIndex;
     fn try_from(index: u8) -> Result<Self, Self::Error> {
         Self::try_from_index(index)
     }
 }
 
-impl SexagenaryCycle {
+impl Ganzhi {
     /// 构造干支，强制校验阴阳同性
     #[inline]
     pub const fn new(stem: Stem, branch: Branch) -> Option<Self> {
@@ -103,8 +103,8 @@ impl SexagenaryCycle {
     }
 }
 
-/// 向前步进整数位移；与 [`CyclicRing::offset`] 相同。
-impl core::ops::Add<i32> for SexagenaryCycle {
+/// 向前步进整数位移；与 [`CyclicSequence::offset`] 相同。
+impl core::ops::Add<i32> for Ganzhi {
     type Output = Self;
     fn add(self, rhs: i32) -> Self::Output {
         self.offset(rhs)
@@ -112,10 +112,10 @@ impl core::ops::Add<i32> for SexagenaryCycle {
 }
 
 /// 向后步进整数位移；支持全部 `i32`，包括 `i32::MIN`。
-impl core::ops::Sub<i32> for SexagenaryCycle {
+impl core::ops::Sub<i32> for Ganzhi {
     type Output = Self;
     fn sub(self, rhs: i32) -> Self::Output {
-        Self::from_index(crate::math::ring::wrap(
+        Self::from_index(crate::math::sequence::wrap(
             i64::from(self.index()) - i64::from(rhs),
             Self::MODULUS,
         ))
@@ -123,20 +123,20 @@ impl core::ops::Sub<i32> for SexagenaryCycle {
 }
 
 /// 将整数位移的向前步进结果写回自身。
-impl core::ops::AddAssign<i32> for SexagenaryCycle {
+impl core::ops::AddAssign<i32> for Ganzhi {
     fn add_assign(&mut self, rhs: i32) {
         *self = *self + rhs;
     }
 }
 
 /// 将整数位移的向后步进结果写回自身。
-impl core::ops::SubAssign<i32> for SexagenaryCycle {
+impl core::ops::SubAssign<i32> for Ganzhi {
     fn sub_assign(&mut self, rhs: i32) {
         *self = *self - rhs;
     }
 }
 
-impl CyclicRing for SexagenaryCycle {
+impl CyclicSequence for Ganzhi {
     const MODULUS: core::num::NonZeroU8 = core::num::NonZeroU8::new(60).unwrap();
 
     /// 按 60 周期回绕构造 (0 = 甲子, 1 = 乙丑, ..., 59 = 癸亥)
@@ -156,12 +156,12 @@ impl CyclicRing for SexagenaryCycle {
     fn index(self) -> u8 {
         let s = i64::from(self.stem.index());
         let b = i64::from(self.branch.index());
-        crate::math::ring::wrap(6 * s - 5 * b, Self::MODULUS)
+        crate::math::sequence::wrap(6 * s - 5 * b, Self::MODULUS)
     }
 }
 
 /// 输出天干、地支的中文名称，不带分隔符；不改变 Serde 的对象表示。
-impl fmt::Display for SexagenaryCycle {
+impl fmt::Display for Ganzhi {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}{}", self.stem, self.branch)
     }
@@ -170,15 +170,15 @@ impl fmt::Display for SexagenaryCycle {
 /// 严格解析两个中文字符组成的合法干支，不裁剪空白或接受别名。
 ///
 /// ```
-/// use matharts_core::{InvalidGanzhi, ParseError, SexagenaryCycle};
-/// let value: SexagenaryCycle = "甲子".parse().unwrap();
+/// use matharts_core::{InvalidGanzhi, ParseError, Ganzhi};
+/// let value: Ganzhi = "甲子".parse().unwrap();
 /// assert_eq!(value.to_string(), "甲子");
 /// assert_eq!(
-///     "甲丑".parse::<SexagenaryCycle>(),
+///     "甲丑".parse::<Ganzhi>(),
 ///     Err(ParseError::InvalidGanzhi(InvalidGanzhi)),
 /// );
 /// ```
-impl FromStr for SexagenaryCycle {
+impl FromStr for Ganzhi {
     type Err = ParseError;
 
     /// # Errors

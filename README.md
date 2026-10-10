@@ -40,16 +40,16 @@ matharts_core = { path = "../core" }
 将下面的完整示例保存为应用的 `src/main.rs`，在应用目录运行 `cargo run`：
 
 ```rust
-use matharts_core::{Branch, CyclicRing, ParseError, SexagenaryCycle};
+use matharts_core::{Branch, CyclicSequence, ParseError, Ganzhi};
 
 fn main() -> Result<(), ParseError> {
-    let value: SexagenaryCycle = "甲子".parse()?;
+    let value: Ganzhi = "甲子".parse()?;
 
     println!("{value} → {}", value.offset(1)); // 甲子 → 乙丑
     assert_eq!(value.offset(60), value);
     assert_eq!(value.xun().void_branches(), (Branch::Xu, Branch::Hai));
     assert_eq!(value.nayin().name(), "海中金");
-    assert!("甲丑".parse::<SexagenaryCycle>().is_err());
+    assert!("甲丑".parse::<Ganzhi>().is_err());
     Ok(())
 }
 ```
@@ -126,17 +126,36 @@ assert_eq!((gou.lower(), gou.upper()), (Trigram::Xun, Trigram::Qian));
 
 ## 接口约定
 
-- **索引与周期**：`TryFrom<u8>` 严格拒绝越界值；`CyclicRing::from_index()` 按周期回绕，`offset()` 支持全部 `i32` 正负位移。
-- **中文文本**：`Primitive`、`Element`、`Stem`、`Branch`、`SexagenaryCycle`、`Trigram`、`Xun`、`Nayin` 的 `FromStr` 仅接受精确名称，`Display` 输出相同中文。旬名包含“旬”字（如“甲子旬”），纳音使用采用表中的用字；不裁剪空白或接受别名。
-- **整数步进**：`Stem`、`Branch`、`Growth`、`SexagenaryCycle`、`Xun` 支持 `+ i32`、`- i32`、`+= i32`、`-= i32`，包括 `i32::MIN/MAX`。值间的正向距离使用 `from.distance_to(to)`。
+- **索引与周期**：`TryFrom<u8>` 严格拒绝越界值；`CyclicSequence::from_index()` 按周期回绕，`offset()` 支持全部 `i32` 正负位移。
+- **中文文本**：`YinYang`、`Element`、`Stem`、`Branch`、`Ganzhi`、`Trigram`、`Xun`、`Nayin` 的 `FromStr` 仅接受精确名称，`Display` 输出相同中文。旬名包含“旬”字（如“甲子旬”），纳音使用采用表中的用字；不裁剪空白或接受别名。
+- **整数步进**：`Stem`、`Branch`、`GrowthPhase`、`Ganzhi`、`Xun` 支持 `+ i32`、`- i32`、`+= i32`、`-= i32`，包括 `i32::MIN/MAX`。值间的正向距离使用 `from.distance_to(to)`。
 - **解析错误**：`ParseError` 区分名称错误、干支格式错误与非法配对；它是 `non_exhaustive` 枚举，外部匹配需保留兜底分支。
 - **关系方向**：十神、生克、刑与循环距离保留参数方向。
 
 中文解析不分配堆内存。`Display` 可写入 `core::fmt::Write`；调用 `to_string()` 的分配发生在应用侧。
 
+### 接口变更
+
+本轮统一类型名、公开模块与文件名，不保留旧入口或别名：
+
+| 原类型 | 当前类型 | 当前模块 |
+| --- | --- | --- |
+| `Primitive` | `YinYang` | `yin_yang` |
+| `God` | `TenGod` | `ten_god` |
+| `Growth` | `GrowthPhase` | `growth_phase` |
+| `SexagenaryCycle` | `Ganzhi` | `ganzhi` |
+| `CyclicRing` | `CyclicSequence` | `math::sequence`（也由 `math` 和 crate 根导出） |
+
+`Stem::primitive()`、`Branch::primitive()` 改为 `yin_yang()`，解析错误
+`ParseError::InvalidPrimitive` 改为 `InvalidYinYang`。计算表、变体顺序和中文名称保持原值。
+
+Serde 可读值的代码与字段保持原值；紧凑模型中的类型名改为当前公开类型名。
+独立编码样本更新为 `encoding-v3.json`，中文名称样本更新为 `text-values-v2.json`；
+不保留旧模型名的兼容实现。协议具体内容见下节及 [tests/fixtures/](tests/fixtures/)。
+
 ### Serde 编码
 
-中文显示与机器编码分开维护。可读格式使用固定代码字符串和具名对象，例如 `SexagenaryCycle`：
+中文显示与机器编码分开维护。可读格式使用固定代码字符串和具名对象，例如 `Ganzhi`：
 
 ```json
 { "stem": "Jia", "branch": "Zi" }
@@ -149,7 +168,7 @@ assert_eq!((gou.lower(), gou.upper()), (Trigram::Xun, Trigram::Qian));
 
 | 记录 | 必需字段 |
 | --- | --- |
-| `SexagenaryCycle` | `stem`、`branch` |
+| `Ganzhi` | `stem`、`branch` |
 | `HiddenStems` | `primary`、`secondary`、`tertiary`；空槽显式为 `null` |
 | `Hexagram` | `lower`、`upper`，例如 `{"lower":"Qian","upper":"Kun"}` |
 
@@ -165,7 +184,7 @@ assert_eq!((gou.lower(), gou.upper()), (Trigram::Xun, Trigram::Qian));
 - **固定对应**：返回所采用表中的关系、阶段或成员；来源与适用范围随类型或方法的 rustdoc 维护。
 - **应用条件**：实际成局、成化、空亡效应及吉凶由调用方判断；节气、换日、排盘、起卦和流派策略由上层领域库实现。
 
-十神、长生、藏干及刑合等采用表的跨体系适用性需逐项核验。天干冲、五合、六合、三合、三会、长生和十神的 rustdoc 记录采用版本、消费场景、同输入对照及已知差异，未完成的校勘或消费方证据标记为待补。六破采用《六壬大全》表，跨体系复用证据待补。
+十神、长生、藏干及刑合等采用表的跨体系适用性需逐项核验。纳音、天干冲、五合、六合、六冲、六害、三合、三会、长生和十神的 rustdoc 记录采用版本、消费语义、同输入对照及已知差异；刑和六破也分别记录方向与采用表边界。未完成的底本定位、校勘或实际消费方证据标记为待补。
 
 藏干、五虎遁和五鼠遁的来源定位、转录差异及调用前提分别见 `Branch::hidden_stems`、`derive_month_stem` 和 `derive_hour_stem` 的 rustdoc。未明确的底本版本、影印校勘和跨体系消费对照分别标记为待补。
 
@@ -191,6 +210,15 @@ mise exec -- hk check --all --slow
 ```sh
 mise exec -- cargo doc --no-deps --all-features --locked --open
 ```
+
+可选的 Serde 解码性能基准使用独立冻结输入，并在计时前验证真实生产类型：
+
+```sh
+rtk proxy mise exec -- cargo bench --bench serde_decode --features serde --locked
+rtk proxy mise exec -- cargo bench --bench core_operations --features serde --locked
+```
+
+运行结果为本机批次平均耗时。解码基准默认检查 19 类型、测量 171 项；核心操作独立测量 7 项。编译期单类型隔离、四处修改的实测结果及纳音连带差异核查见 [优化及隔离复测](docs/reviews/2026-10-10-parallel-optimizations.md)。
 
 ## 文档
 

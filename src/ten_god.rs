@@ -7,7 +7,7 @@ use crate::stem::Stem;
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
-pub enum God {
+pub enum TenGod {
     /// 比肩 (同我，同极性)
     BiJian = 0,
     /// 劫财 (同我，异极性)
@@ -51,28 +51,28 @@ impl Stem {
     /// 证据待补；这些缺口不由固定表测试或单个偏印条目的来源替代。
     ///
     /// ```
-    /// use matharts_core::{God, Stem};
+    /// use matharts_core::{TenGod, Stem};
     ///
     /// // 丙是甲的食神，甲是丙的偏印。
-    /// assert_eq!(Stem::Jia.ten_god_of(Stem::Bing), God::ShiShen);
-    /// assert_eq!(Stem::Bing.ten_god_of(Stem::Jia), God::PianYin);
+    /// assert_eq!(Stem::Jia.ten_god_of(Stem::Bing), TenGod::ShiShen);
+    /// assert_eq!(Stem::Bing.ten_god_of(Stem::Jia), TenGod::PianYin);
     /// ```
     #[inline]
-    pub fn ten_god_of(self, target: Stem) -> God {
-        let same_primitive = self.primitive() == target.primitive();
+    pub fn ten_god_of(self, target: Stem) -> TenGod {
+        let same_yin_yang = self.yin_yang() == target.yin_yang();
         let relation = self.element().relation_to(target.element());
 
-        match (relation, same_primitive) {
-            (ElementRelation::Same, true) => God::BiJian,
-            (ElementRelation::Same, false) => God::JieCai,
-            (ElementRelation::Generates, true) => God::ShiShen,
-            (ElementRelation::Generates, false) => God::ShangGuan,
-            (ElementRelation::Overcomes, true) => God::PianCai,
-            (ElementRelation::Overcomes, false) => God::ZhengCai,
-            (ElementRelation::OvercomeBy, true) => God::QiSha,
-            (ElementRelation::OvercomeBy, false) => God::ZhengGuan,
-            (ElementRelation::GeneratedBy, true) => God::PianYin,
-            (ElementRelation::GeneratedBy, false) => God::ZhengYin,
+        match (relation, same_yin_yang) {
+            (ElementRelation::Same, true) => TenGod::BiJian,
+            (ElementRelation::Same, false) => TenGod::JieCai,
+            (ElementRelation::Generates, true) => TenGod::ShiShen,
+            (ElementRelation::Generates, false) => TenGod::ShangGuan,
+            (ElementRelation::Overcomes, true) => TenGod::PianCai,
+            (ElementRelation::Overcomes, false) => TenGod::ZhengCai,
+            (ElementRelation::OvercomeBy, true) => TenGod::QiSha,
+            (ElementRelation::OvercomeBy, false) => TenGod::ZhengGuan,
+            (ElementRelation::GeneratedBy, true) => TenGod::PianYin,
+            (ElementRelation::GeneratedBy, false) => TenGod::ZhengYin,
         }
     }
 }
@@ -80,10 +80,10 @@ impl Stem {
 // 可读格式只接受代码字符串；紧凑格式使用原生枚举模型。
 
 #[cfg(feature = "serde")]
-impl<'de> serde::Deserialize<'de> for God {
+impl<'de> serde::Deserialize<'de> for TenGod {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         use serde::de::{self, EnumAccess, VariantAccess};
-        const CODES: &[&str] = &[
+        const CODES: &[&str; 10] = &[
             "BiJian",
             "JieCai",
             "ShiShen",
@@ -95,9 +95,21 @@ impl<'de> serde::Deserialize<'de> for God {
             "PianYin",
             "ZhengYin",
         ];
+        const VALUES: [TenGod; CODES.len()] = [
+            TenGod::BiJian,
+            TenGod::JieCai,
+            TenGod::ShiShen,
+            TenGod::ShangGuan,
+            TenGod::PianCai,
+            TenGod::ZhengCai,
+            TenGod::QiSha,
+            TenGod::ZhengGuan,
+            TenGod::PianYin,
+            TenGod::ZhengYin,
+        ];
         struct Identifier;
         impl<'de> de::DeserializeSeed<'de> for Identifier {
-            type Value = God;
+            type Value = TenGod;
             fn deserialize<D: serde::Deserializer<'de>>(
                 self,
                 d: D,
@@ -106,42 +118,28 @@ impl<'de> serde::Deserialize<'de> for God {
             }
         }
         impl de::Visitor<'_> for Identifier {
-            type Value = God;
+            type Value = TenGod;
             fn expecting(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 f.write_str("variant identifier")
             }
             fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
-                match value {
-                    "BiJian" => Ok(God::BiJian),
-                    "JieCai" => Ok(God::JieCai),
-                    "ShiShen" => Ok(God::ShiShen),
-                    "ShangGuan" => Ok(God::ShangGuan),
-                    "PianCai" => Ok(God::PianCai),
-                    "ZhengCai" => Ok(God::ZhengCai),
-                    "QiSha" => Ok(God::QiSha),
-                    "ZhengGuan" => Ok(God::ZhengGuan),
-                    "PianYin" => Ok(God::PianYin),
-                    "ZhengYin" => Ok(God::ZhengYin),
-                    _ => Err(E::unknown_variant(value, CODES)),
-                }
+                CODES
+                    .iter()
+                    .position(|code| *code == value)
+                    .map(|index| VALUES[index])
+                    .ok_or_else(|| E::unknown_variant(value, CODES))
             }
             fn visit_u64<E: de::Error>(self, value: u64) -> Result<Self::Value, E> {
-                match value {
-                    0 => Ok(God::BiJian),
-                    1 => Ok(God::JieCai),
-                    2 => Ok(God::ShiShen),
-                    3 => Ok(God::ShangGuan),
-                    4 => Ok(God::PianCai),
-                    5 => Ok(God::ZhengCai),
-                    6 => Ok(God::QiSha),
-                    7 => Ok(God::ZhengGuan),
-                    8 => Ok(God::PianYin),
-                    9 => Ok(God::ZhengYin),
-                    _ => Err(E::invalid_value(
-                        de::Unexpected::Unsigned(value),
-                        &"variant index 0 <= i < 10",
-                    )),
-                }
+                usize::try_from(value)
+                    .ok()
+                    .and_then(|index| VALUES.get(index))
+                    .copied()
+                    .ok_or_else(|| {
+                        E::invalid_value(
+                            de::Unexpected::Unsigned(value),
+                            &"variant index 0 <= i < 10",
+                        )
+                    })
             }
             fn visit_bytes<E: de::Error>(self, value: &[u8]) -> Result<Self::Value, E> {
                 match core::str::from_utf8(value) {
@@ -152,9 +150,9 @@ impl<'de> serde::Deserialize<'de> for God {
         }
         struct CodeVisitor;
         impl de::Visitor<'_> for CodeVisitor {
-            type Value = God;
+            type Value = TenGod;
             fn expecting(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                f.write_str("God code string")
+                f.write_str("TenGod code string")
             }
             fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
                 de::Visitor::visit_str(Identifier, value)
@@ -162,9 +160,9 @@ impl<'de> serde::Deserialize<'de> for God {
         }
         struct EnumVisitor;
         impl<'de> de::Visitor<'de> for EnumVisitor {
-            type Value = God;
+            type Value = TenGod;
             fn expecting(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                f.write_str("enum God")
+                f.write_str("enum TenGod")
             }
             fn visit_enum<A: EnumAccess<'de>>(self, data: A) -> Result<Self::Value, A::Error> {
                 let (value, variant) = data.variant_seed(Identifier)?;
@@ -175,7 +173,7 @@ impl<'de> serde::Deserialize<'de> for God {
         if deserializer.is_human_readable() {
             deserializer.deserialize_str(CodeVisitor)
         } else {
-            deserializer.deserialize_enum("God", CODES, EnumVisitor)
+            deserializer.deserialize_enum("TenGod", CODES, EnumVisitor)
         }
     }
 }

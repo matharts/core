@@ -2,9 +2,9 @@
 
 use crate::element::Element;
 use crate::error::InvalidIndex;
-use crate::math::CyclicRing;
-use crate::primitive::Primitive;
+use crate::math::CyclicSequence;
 use crate::stem::Stem;
+use crate::yin_yang::YinYang;
 use core::{
     fmt,
     ops::{Add, Sub},
@@ -120,7 +120,7 @@ pub enum Branch {
     Hai = 11,
 }
 
-impl CyclicRing for Branch {
+impl CyclicSequence for Branch {
     const MODULUS: core::num::NonZeroU8 = core::num::NonZeroU8::new(12).unwrap();
 
     #[inline]
@@ -153,11 +153,11 @@ impl Branch {
 
     /// 阴阳极性：传统一基序数奇阳偶阴，对应零基索引偶阳奇阴。
     #[inline]
-    pub const fn primitive(self) -> Primitive {
+    pub const fn yin_yang(self) -> YinYang {
         if (self as u8).is_multiple_of(2) {
-            Primitive::Yang
+            YinYang::Yang
         } else {
-            Primitive::Yin
+            YinYang::Yin
         }
     }
 
@@ -307,10 +307,16 @@ impl Branch {
     }
 
     /// 查询有向相刑配对；自刑仅表示同名两支属于表中组合，不判断事件是否发生。
-    /// 类别注释采用《三命通会》卷二一说：寅巳申为无恩，丑戌未为恃势。
+    ///
+    /// # 采用定义与证据状态
+    /// 来源版本：[《三命通会》四库全书本卷二《论三刑》转录](https://zh.wikisource.org/wiki/三命通會_(四庫全書本)/卷02#論三刑)。
+    /// 消费场景是命理调用方按此表查询有序两支；不是完整三支集合识别。
+    /// 同输入对照：寅刑巳返回 `true`，巳刑寅返回 `false`；辰见辰属于自刑配对。
+    /// 类别注释采用该篇一说：寅巳申为无恩，丑戌未为恃势。
     /// 同篇引《三车一览》对调这两组名称并认可其说，故此处并非唯一命名。
-    /// 名称差异不改变本方法采用的有向配对。
-    /// 原文转录：[《三命通会》卷二《论三刑》](https://zh.wikisource.org/wiki/三命通會_(四庫全書本)/卷02)。
+    /// 名称差异不改变本方法采用的有向配对；不查询刑的强弱或发生条件。
+    /// 全部 144 个有序输入由 `tests/rules.rs` 独立表验收。
+    /// 转录字形的影印本校勘、其他体系的方向与自刑条件、实际消费方对照证据待补。
     #[inline]
     pub fn is_punishing(self, target: Self) -> bool {
         match self {
@@ -441,7 +447,7 @@ impl Sub<i32> for Branch {
     type Output = Self;
     #[inline]
     fn sub(self, rhs: i32) -> Self::Output {
-        Self::from_index(crate::math::ring::wrap(
+        Self::from_index(crate::math::sequence::wrap(
             i64::from(self.index()) - i64::from(rhs),
             Self::MODULUS,
         ))
@@ -513,7 +519,7 @@ impl FromStr for Branch {
 impl<'de> serde::Deserialize<'de> for Branch {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         use serde::de::{self, EnumAccess, VariantAccess};
-        const CODES: &[&str] = &[
+        const CODES: &[&str; Branch::ALL.len()] = &[
             "Zi", "Chou", "Yin", "Mao", "Chen", "Si", "Wu", "Wei", "Shen", "You", "Xu", "Hai",
         ];
         struct Identifier;
@@ -532,41 +538,23 @@ impl<'de> serde::Deserialize<'de> for Branch {
                 f.write_str("variant identifier")
             }
             fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
-                match value {
-                    "Zi" => Ok(Branch::Zi),
-                    "Chou" => Ok(Branch::Chou),
-                    "Yin" => Ok(Branch::Yin),
-                    "Mao" => Ok(Branch::Mao),
-                    "Chen" => Ok(Branch::Chen),
-                    "Si" => Ok(Branch::Si),
-                    "Wu" => Ok(Branch::Wu),
-                    "Wei" => Ok(Branch::Wei),
-                    "Shen" => Ok(Branch::Shen),
-                    "You" => Ok(Branch::You),
-                    "Xu" => Ok(Branch::Xu),
-                    "Hai" => Ok(Branch::Hai),
-                    _ => Err(E::unknown_variant(value, CODES)),
-                }
+                CODES
+                    .iter()
+                    .position(|code| *code == value)
+                    .map(|index| Branch::ALL[index])
+                    .ok_or_else(|| E::unknown_variant(value, CODES))
             }
             fn visit_u64<E: de::Error>(self, value: u64) -> Result<Self::Value, E> {
-                match value {
-                    0 => Ok(Branch::Zi),
-                    1 => Ok(Branch::Chou),
-                    2 => Ok(Branch::Yin),
-                    3 => Ok(Branch::Mao),
-                    4 => Ok(Branch::Chen),
-                    5 => Ok(Branch::Si),
-                    6 => Ok(Branch::Wu),
-                    7 => Ok(Branch::Wei),
-                    8 => Ok(Branch::Shen),
-                    9 => Ok(Branch::You),
-                    10 => Ok(Branch::Xu),
-                    11 => Ok(Branch::Hai),
-                    _ => Err(E::invalid_value(
-                        de::Unexpected::Unsigned(value),
-                        &"variant index 0 <= i < 12",
-                    )),
-                }
+                usize::try_from(value)
+                    .ok()
+                    .and_then(|index| Branch::ALL.get(index))
+                    .copied()
+                    .ok_or_else(|| {
+                        E::invalid_value(
+                            de::Unexpected::Unsigned(value),
+                            &"variant index 0 <= i < 12",
+                        )
+                    })
             }
             fn visit_bytes<E: de::Error>(self, value: &[u8]) -> Result<Self::Value, E> {
                 match core::str::from_utf8(value) {
@@ -734,7 +722,8 @@ impl TryFrom<u8> for SixCombination {
 impl<'de> serde::Deserialize<'de> for SixCombination {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         use serde::de::{self, EnumAccess, VariantAccess};
-        const CODES: &[&str] = &["ZiChou", "YinHai", "MaoXu", "ChenYou", "SiShen", "WuWei"];
+        const CODES: &[&str; SixCombination::ALL.len()] =
+            &["ZiChou", "YinHai", "MaoXu", "ChenYou", "SiShen", "WuWei"];
         struct Identifier;
         impl<'de> de::DeserializeSeed<'de> for Identifier {
             type Value = SixCombination;
@@ -751,15 +740,11 @@ impl<'de> serde::Deserialize<'de> for SixCombination {
                 f.write_str("variant identifier")
             }
             fn visit_str<E: de::Error>(self, value: &str) -> Result<SixCombination, E> {
-                match value {
-                    "ZiChou" => Ok(SixCombination::ZiChou),
-                    "YinHai" => Ok(SixCombination::YinHai),
-                    "MaoXu" => Ok(SixCombination::MaoXu),
-                    "ChenYou" => Ok(SixCombination::ChenYou),
-                    "SiShen" => Ok(SixCombination::SiShen),
-                    "WuWei" => Ok(SixCombination::WuWei),
-                    _ => Err(E::unknown_variant(value, CODES)),
-                }
+                CODES
+                    .iter()
+                    .position(|code| *code == value)
+                    .map(|index| SixCombination::ALL[index])
+                    .ok_or_else(|| E::unknown_variant(value, CODES))
             }
             fn visit_u64<E: de::Error>(self, value: u64) -> Result<SixCombination, E> {
                 u8::try_from(value)
@@ -811,6 +796,13 @@ impl<'de> serde::Deserialize<'de> for SixCombination {
 
 // 六冲配对及其固定成员。
 /// 六种地支六冲配对，即十二支的对宫；不判断实际冲动或吉凶。
+///
+/// # 采用定义与证据状态
+/// 来源版本：[南秉吉《选择纪要》上编（1867）《地支相冲》](https://zh.wikisource.org/wiki/選擇紀要/上編#地支相沖)。
+/// 采用子午、丑未、寅申、卯酉、辰戌、巳亥六对；消费场景是择日或命理的对宫成员识别。
+/// 同输入对照：子午识别为 `ZiWu`，子丑不属于六冲；交换输入次序仍为同一配对。
+/// 该节也用“冲破”指这些对宫，不等同于 [`SixBreak`] 的六破采用表。
+/// 转录的影印本校勘及跨体系实际消费方对照证据待补；成员一致不证明作用条件一致。
 ///
 /// ```
 /// use matharts_core::{Branch, SixClash};
@@ -929,7 +921,8 @@ impl TryFrom<u8> for SixClash {
 impl<'de> serde::Deserialize<'de> for SixClash {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         use serde::de::{self, EnumAccess, VariantAccess};
-        const CODES: &[&str] = &["ZiWu", "ChouWei", "YinShen", "MaoYou", "ChenXu", "SiHai"];
+        const CODES: &[&str; SixClash::ALL.len()] =
+            &["ZiWu", "ChouWei", "YinShen", "MaoYou", "ChenXu", "SiHai"];
         struct Identifier;
         impl<'de> de::DeserializeSeed<'de> for Identifier {
             type Value = SixClash;
@@ -1004,8 +997,14 @@ impl<'de> serde::Deserialize<'de> for SixClash {
 // 六害配对及其固定成员。
 /// 六种地支六害配对；集合无序不表示应用效果对称。
 ///
-/// 采用《三命通会》卷二《论六害》与《选择纪要》上编对应成员。
+/// # 采用定义与证据状态
+/// 来源版本：[《三命通会》四库全书本卷二《论六害》转录](https://zh.wikisource.org/wiki/三命通會_(四庫全書本)/卷02#論六害)及
+/// [南秉吉《选择纪要》上编（1867）《地支六害》](https://zh.wikisource.org/wiki/選擇紀要/上編#地支六害一名穿心六害)。
+/// 两处均列子未、丑午、寅巳、卯辰、申亥、酉戌；消费场景是命理或择日的固定成员识别。
+/// 同输入对照：子未识别为 `ZiWei`，子午不属于六害；交换输入次序仍为同一配对。
+/// 《论六害》对酉见戌与戌见酉的作用有不同论述；本类型的无序身份不携带这种方向性作用。
 /// 只识别固定配对，不判断相穿、受害程度或实际吉凶。
+/// 转录的影印本校勘及跨体系实际消费方对照证据待补；不将成员对称解释为效果对称。
 ///
 /// ```
 /// use matharts_core::{Branch, SixHarm};
@@ -1122,7 +1121,8 @@ impl TryFrom<u8> for SixHarm {
 impl<'de> serde::Deserialize<'de> for SixHarm {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         use serde::de::{self, EnumAccess, VariantAccess};
-        const CODES: &[&str] = &["ZiWei", "ChouWu", "YinSi", "MaoChen", "ShenHai", "YouXu"];
+        const CODES: &[&str; SixHarm::ALL.len()] =
+            &["ZiWei", "ChouWu", "YinSi", "MaoChen", "ShenHai", "YouXu"];
         struct Identifier;
         impl<'de> de::DeserializeSeed<'de> for Identifier {
             type Value = SixHarm;
@@ -1136,15 +1136,11 @@ impl<'de> serde::Deserialize<'de> for SixHarm {
                 f.write_str("variant identifier")
             }
             fn visit_str<E: de::Error>(self, value: &str) -> Result<SixHarm, E> {
-                match value {
-                    "ZiWei" => Ok(SixHarm::ZiWei),
-                    "ChouWu" => Ok(SixHarm::ChouWu),
-                    "YinSi" => Ok(SixHarm::YinSi),
-                    "MaoChen" => Ok(SixHarm::MaoChen),
-                    "ShenHai" => Ok(SixHarm::ShenHai),
-                    "YouXu" => Ok(SixHarm::YouXu),
-                    _ => Err(E::unknown_variant(value, CODES)),
-                }
+                CODES
+                    .iter()
+                    .position(|code| *code == value)
+                    .map(|index| SixHarm::ALL[index])
+                    .ok_or_else(|| E::unknown_variant(value, CODES))
             }
             fn visit_u64<E: de::Error>(self, value: u64) -> Result<SixHarm, E> {
                 u8::try_from(value)
@@ -1197,9 +1193,15 @@ impl<'de> serde::Deserialize<'de> for SixHarm {
 // 采用《六壬大全》表的六破配对及其固定成员。
 /// 《六壬大全》卷三《破》采用的六种地支配对；不判断实际作用。
 ///
-/// 这是原 `Branch::is_breaking` 所采用表的身份模型，不代表所有体系的“破”。
-/// 不等同于排除四孟的破杀或《五行大义》的冲破；跨体系复用证据待补。
-/// 来源原文转录：<https://libokang.com/zh-hant/guji/liuren/六壬大全/3/>。
+/// # 采用定义与证据状态
+/// 来源定位：[《六壬大全》卷三《破》网页原文转录](https://libokang.com/zh-hant/guji/liuren/六壬大全/3/#破)。
+/// 网页未明确底本版本，刊本定位及影印本校勘待补；不将网页译文当作原文证据。
+/// 沿用 [`Branch::is_breaking`] 的子酉、丑辰、寅亥、卯午、巳申、未戌表；
+/// 消费语义限定为六壬调用方在该表中查询成员，实际临日、入传和应用条件由调用方判断。
+/// 同输入对照：原文列申破巳并说明六对可反向，本库将巳申识别为 `SiShen`；
+/// 同时可属于六合，配对身份不互相排斥，也不包含原文的作用断语。
+/// 不等同于排除四孟的破杀或表示对宫的冲破；不代表所有体系的“破”。
+/// 其他体系是否采用同表、同输入语义及实际消费方对照证据待补。
 ///
 /// ```
 /// use matharts_core::{Branch, SixBreak, SixCombination};
@@ -1318,7 +1320,8 @@ impl TryFrom<u8> for SixBreak {
 impl<'de> serde::Deserialize<'de> for SixBreak {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         use serde::de::{self, EnumAccess, VariantAccess};
-        const CODES: &[&str] = &["ZiYou", "ChouChen", "YinHai", "MaoWu", "SiShen", "WeiXu"];
+        const CODES: &[&str; SixBreak::ALL.len()] =
+            &["ZiYou", "ChouChen", "YinHai", "MaoWu", "SiShen", "WeiXu"];
         struct Identifier;
         impl<'de> de::DeserializeSeed<'de> for Identifier {
             type Value = SixBreak;
@@ -1332,15 +1335,11 @@ impl<'de> serde::Deserialize<'de> for SixBreak {
                 f.write_str("variant identifier")
             }
             fn visit_str<E: de::Error>(self, value: &str) -> Result<SixBreak, E> {
-                match value {
-                    "ZiYou" => Ok(SixBreak::ZiYou),
-                    "ChouChen" => Ok(SixBreak::ChouChen),
-                    "YinHai" => Ok(SixBreak::YinHai),
-                    "MaoWu" => Ok(SixBreak::MaoWu),
-                    "SiShen" => Ok(SixBreak::SiShen),
-                    "WeiXu" => Ok(SixBreak::WeiXu),
-                    _ => Err(E::unknown_variant(value, CODES)),
-                }
+                CODES
+                    .iter()
+                    .position(|code| *code == value)
+                    .map(|index| SixBreak::ALL[index])
+                    .ok_or_else(|| E::unknown_variant(value, CODES))
             }
             fn visit_u64<E: de::Error>(self, value: u64) -> Result<SixBreak, E> {
                 u8::try_from(value)
@@ -1521,7 +1520,8 @@ impl TryFrom<u8> for ThreeCombination {
 impl<'de> serde::Deserialize<'de> for ThreeCombination {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         use serde::de::{self, EnumAccess, VariantAccess};
-        const CODES: &[&str] = &["ShenZiChen", "SiYouChou", "YinWuXu", "HaiMaoWei"];
+        const CODES: &[&str; ThreeCombination::ALL.len()] =
+            &["ShenZiChen", "SiYouChou", "YinWuXu", "HaiMaoWei"];
         struct Identifier;
         impl<'de> de::DeserializeSeed<'de> for Identifier {
             type Value = ThreeCombination;
@@ -1538,25 +1538,23 @@ impl<'de> serde::Deserialize<'de> for ThreeCombination {
                 f.write_str("variant identifier")
             }
             fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
-                match value {
-                    "ShenZiChen" => Ok(ThreeCombination::ShenZiChen),
-                    "SiYouChou" => Ok(ThreeCombination::SiYouChou),
-                    "YinWuXu" => Ok(ThreeCombination::YinWuXu),
-                    "HaiMaoWei" => Ok(ThreeCombination::HaiMaoWei),
-                    _ => Err(E::unknown_variant(value, CODES)),
-                }
+                CODES
+                    .iter()
+                    .position(|code| *code == value)
+                    .map(|index| ThreeCombination::ALL[index])
+                    .ok_or_else(|| E::unknown_variant(value, CODES))
             }
             fn visit_u64<E: de::Error>(self, value: u64) -> Result<Self::Value, E> {
-                match value {
-                    0 => Ok(ThreeCombination::ShenZiChen),
-                    1 => Ok(ThreeCombination::SiYouChou),
-                    2 => Ok(ThreeCombination::YinWuXu),
-                    3 => Ok(ThreeCombination::HaiMaoWei),
-                    _ => Err(E::invalid_value(
-                        de::Unexpected::Unsigned(value),
-                        &"variant index 0 <= i < 4",
-                    )),
-                }
+                usize::try_from(value)
+                    .ok()
+                    .and_then(|index| ThreeCombination::ALL.get(index))
+                    .copied()
+                    .ok_or_else(|| {
+                        E::invalid_value(
+                            de::Unexpected::Unsigned(value),
+                            &"variant index 0 <= i < 4",
+                        )
+                    })
             }
             fn visit_bytes<E: de::Error>(self, value: &[u8]) -> Result<Self::Value, E> {
                 match core::str::from_utf8(value) {
@@ -1724,7 +1722,8 @@ impl TryFrom<u8> for ThreeMeeting {
 impl<'de> serde::Deserialize<'de> for ThreeMeeting {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         use serde::de::{self, EnumAccess, VariantAccess};
-        const CODES: &[&str] = &["YinMaoChen", "SiWuWei", "ShenYouXu", "HaiZiChou"];
+        const CODES: &[&str; ThreeMeeting::ALL.len()] =
+            &["YinMaoChen", "SiWuWei", "ShenYouXu", "HaiZiChou"];
         struct Identifier;
         impl<'de> de::DeserializeSeed<'de> for Identifier {
             type Value = ThreeMeeting;
@@ -1741,25 +1740,23 @@ impl<'de> serde::Deserialize<'de> for ThreeMeeting {
                 f.write_str("variant identifier")
             }
             fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
-                match value {
-                    "YinMaoChen" => Ok(ThreeMeeting::YinMaoChen),
-                    "SiWuWei" => Ok(ThreeMeeting::SiWuWei),
-                    "ShenYouXu" => Ok(ThreeMeeting::ShenYouXu),
-                    "HaiZiChou" => Ok(ThreeMeeting::HaiZiChou),
-                    _ => Err(E::unknown_variant(value, CODES)),
-                }
+                CODES
+                    .iter()
+                    .position(|code| *code == value)
+                    .map(|index| ThreeMeeting::ALL[index])
+                    .ok_or_else(|| E::unknown_variant(value, CODES))
             }
             fn visit_u64<E: de::Error>(self, value: u64) -> Result<Self::Value, E> {
-                match value {
-                    0 => Ok(ThreeMeeting::YinMaoChen),
-                    1 => Ok(ThreeMeeting::SiWuWei),
-                    2 => Ok(ThreeMeeting::ShenYouXu),
-                    3 => Ok(ThreeMeeting::HaiZiChou),
-                    _ => Err(E::invalid_value(
-                        de::Unexpected::Unsigned(value),
-                        &"variant index 0 <= i < 4",
-                    )),
-                }
+                usize::try_from(value)
+                    .ok()
+                    .and_then(|index| ThreeMeeting::ALL.get(index))
+                    .copied()
+                    .ok_or_else(|| {
+                        E::invalid_value(
+                            de::Unexpected::Unsigned(value),
+                            &"variant index 0 <= i < 4",
+                        )
+                    })
             }
             fn visit_bytes<E: de::Error>(self, value: &[u8]) -> Result<Self::Value, E> {
                 match core::str::from_utf8(value) {

@@ -1,16 +1,16 @@
 //! 具名规则的固定回归表；锁定选用定义，不宣称适用于所有术数。
 use matharts_core::{
-    Branch, CyclicRing, Element, God, Growth, SexagenaryCycle, Stem, derive_hour_stem,
+    Branch, CyclicSequence, Element, Ganzhi, GrowthPhase, Stem, TenGod, derive_hour_stem,
     derive_month_stem,
 };
 
 #[test]
 fn ten_gods_cover_all_hundred_ordered_pairs() {
-    use God::{
+    use TenGod::{
         BiJian as B, JieCai as J, PianCai as C, PianYin as Y, QiSha as Q, ShangGuan as H,
         ShiShen as S, ZhengCai as D, ZhengGuan as G, ZhengYin as Z,
     };
-    let table: [[God; 10]; 10] = [
+    let table: [[TenGod; 10]; 10] = [
         [B, J, S, H, C, D, Q, G, Y, Z],
         [J, B, H, S, D, C, G, Q, Z, Y],
         [Y, Z, B, J, S, H, C, D, Q, G],
@@ -54,7 +54,7 @@ fn named_growth_rule_covers_all_hundred_twenty_positions() {
             let branch = Branch::try_from(b).unwrap();
             assert_eq!(
                 stem.growth_phase_at(branch),
-                Growth::try_from(expected).unwrap()
+                GrowthPhase::try_from(expected).unwrap()
             );
         }
     }
@@ -101,7 +101,7 @@ fn every_nayin_pair_has_the_frozen_element() {
     ];
     for (slot, element) in (0_u8..30).zip(expected) {
         for i in [slot * 2, slot * 2 + 1] {
-            let value = SexagenaryCycle::try_from(i).unwrap();
+            let value = Ganzhi::try_from(i).unwrap();
             assert_eq!(value.nayin().element(), element);
         }
     }

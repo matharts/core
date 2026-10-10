@@ -33,7 +33,7 @@ pub enum ParseError {
     /// 输入不是一个精确的中文五行名。
     InvalidElement,
     /// 输入不是一个精确的中文阴阳名。
-    InvalidPrimitive,
+    InvalidYinYang,
     /// 输入不是一个精确的中文八卦名。
     InvalidTrigram,
     /// 输入不是带“旬”字的精确中文六旬名。
@@ -54,7 +54,7 @@ impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::InvalidElement => f.write_str("expected one exact Chinese element name"),
-            Self::InvalidPrimitive => f.write_str("expected one exact Chinese yin-yang name"),
+            Self::InvalidYinYang => f.write_str("expected one exact Chinese yin-yang name"),
             Self::InvalidTrigram => f.write_str("expected one exact Chinese trigram name"),
             Self::InvalidXun => f.write_str("expected one exact Chinese xun name including 旬"),
             Self::InvalidNayin => f.write_str("expected one exact adopted Chinese nayin name"),

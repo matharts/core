@@ -1,6 +1,6 @@
 //! 六十甲子中的六旬身份与成员集合，不解释空亡的实际作用。
 
-use crate::{Branch, CyclicRing, InvalidIndex, SexagenaryCycle};
+use crate::{Branch, CyclicSequence, Ganzhi, InvalidIndex};
 use core::{fmt, str::FromStr};
 
 /// 输出带“旬”字的精确中文名称，与 [`FromStr`] 的输入一致。
@@ -28,8 +28,8 @@ impl FromStr for Xun {
 /// 旬内位置取决于具体干支，不能仅由旬身份确定。
 ///
 /// ```
-/// use matharts_core::{Branch, SexagenaryCycle, Stem, Xun};
-/// let gui_you = SexagenaryCycle::new(Stem::Gui, Branch::You).unwrap();
+/// use matharts_core::{Branch, Ganzhi, Stem, Xun};
+/// let gui_you = Ganzhi::new(Stem::Gui, Branch::You).unwrap();
 /// assert_eq!(gui_you.xun(), Xun::JiaZi);
 /// assert!(Xun::JiaZi.contains(gui_you));
 /// assert_eq!(Xun::JiaZi.members()[9], gui_you);
@@ -78,22 +78,22 @@ impl Xun {
     }
 
     /// 旬首干支，天干恒为甲。
-    pub fn leader(self) -> SexagenaryCycle {
-        SexagenaryCycle::from_index(self.index() * 10)
+    pub fn leader(self) -> Ganzhi {
+        Ganzhi::from_index(self.index() * 10)
     }
 
     /// 从旬首到旬末的十个干支，无堆分配。
-    pub fn members(self) -> [SexagenaryCycle; 10] {
-        let mut next = self.leader();
+    pub fn members(self) -> [Ganzhi; 10] {
+        let mut index = self.index() * 10;
         core::array::from_fn(|_| {
-            let current = next;
-            next = next.offset(1);
+            let current = Ganzhi::from_index(index);
+            index += 1;
             current
         })
     }
 
     /// 判断干支是否属于本旬。
-    pub fn contains(self, value: SexagenaryCycle) -> bool {
+    pub fn contains(self, value: Ganzhi) -> bool {
         value.xun() == self
     }
 
@@ -112,7 +112,7 @@ impl Xun {
     }
 }
 
-/// 向前步进整数位移；与 [`CyclicRing::offset`] 相同。
+/// 向前步进整数位移；与 [`CyclicSequence::offset`] 相同。
 impl core::ops::Add<i32> for Xun {
     type Output = Self;
     fn add(self, rhs: i32) -> Self::Output {
@@ -124,7 +124,7 @@ impl core::ops::Add<i32> for Xun {
 impl core::ops::Sub<i32> for Xun {
     type Output = Self;
     fn sub(self, rhs: i32) -> Self::Output {
-        Self::from_index(crate::math::ring::wrap(
+        Self::from_index(crate::math::sequence::wrap(
             i64::from(self.index()) - i64::from(rhs),
             Self::MODULUS,
         ))
@@ -145,7 +145,7 @@ impl core::ops::SubAssign<i32> for Xun {
     }
 }
 
-impl CyclicRing for Xun {
+impl CyclicSequence for Xun {
     const MODULUS: core::num::NonZeroU8 = core::num::NonZeroU8::new(6).unwrap();
 
     fn from_index(index: u8) -> Self {
@@ -171,7 +171,8 @@ impl TryFrom<u8> for Xun {
 impl<'de> serde::Deserialize<'de> for Xun {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         use serde::de::{self, EnumAccess, VariantAccess};
-        const CODES: &[&str] = &["JiaZi", "JiaXu", "JiaShen", "JiaWu", "JiaChen", "JiaYin"];
+        const CODES: &[&str; Xun::ALL.len()] =
+            &["JiaZi", "JiaXu", "JiaShen", "JiaWu", "JiaChen", "JiaYin"];
         struct Identifier;
         impl<'de> de::DeserializeSeed<'de> for Identifier {
             type Value = Xun;
@@ -188,29 +189,23 @@ impl<'de> serde::Deserialize<'de> for Xun {
                 f.write_str("variant identifier")
             }
             fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
-                match value {
-                    "JiaZi" => Ok(Xun::JiaZi),
-                    "JiaXu" => Ok(Xun::JiaXu),
-                    "JiaShen" => Ok(Xun::JiaShen),
-                    "JiaWu" => Ok(Xun::JiaWu),
-                    "JiaChen" => Ok(Xun::JiaChen),
-                    "JiaYin" => Ok(Xun::JiaYin),
-                    _ => Err(E::unknown_variant(value, CODES)),
-                }
+                CODES
+                    .iter()
+                    .position(|code| *code == value)
+                    .map(|index| Xun::ALL[index])
+                    .ok_or_else(|| E::unknown_variant(value, CODES))
             }
             fn visit_u64<E: de::Error>(self, value: u64) -> Result<Self::Value, E> {
-                match value {
-                    0 => Ok(Xun::JiaZi),
-                    1 => Ok(Xun::JiaXu),
-                    2 => Ok(Xun::JiaShen),
-                    3 => Ok(Xun::JiaWu),
-                    4 => Ok(Xun::JiaChen),
-                    5 => Ok(Xun::JiaYin),
-                    _ => Err(E::invalid_value(
-                        de::Unexpected::Unsigned(value),
-                        &"variant index 0 <= i < 6",
-                    )),
-                }
+                usize::try_from(value)
+                    .ok()
+                    .and_then(|index| Xun::ALL.get(index))
+                    .copied()
+                    .ok_or_else(|| {
+                        E::invalid_value(
+                            de::Unexpected::Unsigned(value),
+                            &"variant index 0 <= i < 6",
+                        )
+                    })
             }
             fn visit_bytes<E: de::Error>(self, value: &[u8]) -> Result<Self::Value, E> {
                 match core::str::from_utf8(value) {

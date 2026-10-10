@@ -1,16 +1,16 @@
 //! 六爻卦的纯结构；下卦在前，上卦在后，不包含起卦或占断信息。
 
-use crate::{InvalidIndex, Primitive, Trigram};
+use crate::{InvalidIndex, Trigram, YinYang};
 
 /// 两个八卦构成的六爻结构。所有8×8组合均合法。
 ///
 /// 爻数组从下到上；位编码最低位代表初爻。类型不保存动爻、卦序或流派规则。
 ///
 /// ```
-/// use matharts_core::{Hexagram, HexagramPosition, Primitive, Trigram};
+/// use matharts_core::{Hexagram, HexagramPosition, YinYang, Trigram};
 /// let tai = Hexagram::from_trigrams(Trigram::Qian, Trigram::Kun);
-/// assert_eq!(tai.lines(), [Primitive::Yang, Primitive::Yang, Primitive::Yang,
-///     Primitive::Yin, Primitive::Yin, Primitive::Yin]);
+/// assert_eq!(tai.lines(), [YinYang::Yang, YinYang::Yang, YinYang::Yang,
+///     YinYang::Yin, YinYang::Yin, YinYang::Yin]);
 /// assert_eq!(tai.bits(), 7);
 /// let pi = Hexagram::from_trigrams(Trigram::Kun, Trigram::Qian);
 /// assert_eq!(tai.reverse_lines(), pi);
@@ -53,14 +53,14 @@ impl Hexagram {
         self.upper
     }
     /// 从下到上的六个阴阳爻构造。
-    pub const fn from_lines(lines: [Primitive; 6]) -> Self {
+    pub const fn from_lines(lines: [YinYang; 6]) -> Self {
         Self::from_trigrams(
             Trigram::from_lines([lines[0], lines[1], lines[2]]),
             Trigram::from_lines([lines[3], lines[4], lines[5]]),
         )
     }
     /// 返回从下到上的六个爻。
-    pub const fn lines(self) -> [Primitive; 6] {
+    pub const fn lines(self) -> [YinYang; 6] {
         let lower = self.lower.lines();
         let upper = self.upper.lines();
         [lower[0], lower[1], lower[2], upper[0], upper[1], upper[2]]
@@ -84,18 +84,32 @@ impl Hexagram {
         }
     }
     /// 查询指定爻位的阴阳。
-    pub const fn line(self, position: HexagramPosition) -> Primitive {
-        self.lines()[position.index() as usize]
+    pub const fn line(self, position: HexagramPosition) -> YinYang {
+        if self.bits() & (1 << position.index()) == 0 {
+            YinYang::Yin
+        } else {
+            YinYang::Yang
+        }
     }
     /// 返回指定爻位替换为给定阴阳后的卦。
-    pub const fn with_line(self, position: HexagramPosition, value: Primitive) -> Self {
-        let mut lines = self.lines();
-        lines[position.index() as usize] = value;
-        Self::from_lines(lines)
+    pub const fn with_line(self, position: HexagramPosition, value: YinYang) -> Self {
+        let mask = 1 << position.index();
+        let bits = match value {
+            YinYang::Yang => self.bits() | mask,
+            YinYang::Yin => self.bits() & !mask,
+        };
+        Self::from_trigrams(
+            Trigram::ALL[(bits & 7) as usize],
+            Trigram::ALL[(bits >> 3) as usize],
+        )
     }
     /// 只交换指定爻位的阴阳；不选择动爻。
     pub const fn toggle_line(self, position: HexagramPosition) -> Self {
-        self.with_line(position, self.line(position).invert())
+        let bits = self.bits() ^ (1 << position.index());
+        Self::from_trigrams(
+            Trigram::ALL[(bits & 7) as usize],
+            Trigram::ALL[(bits >> 3) as usize],
+        )
     }
     /// 逐爻交换阴阳，保持爻位不变。
     pub const fn complement(self) -> Self {
@@ -160,7 +174,8 @@ impl<'de> serde::Deserialize<'de> for HexagramPosition {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         use core::fmt;
         use serde::de::{self, EnumAccess, VariantAccess, Visitor};
-        const CODES: &[&str] = &["First", "Second", "Third", "Fourth", "Fifth", "Sixth"];
+        const CODES: &[&str; HexagramPosition::ALL.len()] =
+            &["First", "Second", "Third", "Fourth", "Fifth", "Sixth"];
         struct CodeVisitor;
         impl Visitor<'_> for CodeVisitor {
             type Value = HexagramPosition;
@@ -168,15 +183,11 @@ impl<'de> serde::Deserialize<'de> for HexagramPosition {
                 f.write_str("HexagramPosition code string")
             }
             fn visit_str<E: de::Error>(self, value: &str) -> Result<HexagramPosition, E> {
-                match value {
-                    "First" => Ok(HexagramPosition::First),
-                    "Second" => Ok(HexagramPosition::Second),
-                    "Third" => Ok(HexagramPosition::Third),
-                    "Fourth" => Ok(HexagramPosition::Fourth),
-                    "Fifth" => Ok(HexagramPosition::Fifth),
-                    "Sixth" => Ok(HexagramPosition::Sixth),
-                    _ => Err(E::unknown_variant(value, CODES)),
-                }
+                CODES
+                    .iter()
+                    .position(|code| *code == value)
+                    .map(|index| HexagramPosition::ALL[index])
+                    .ok_or_else(|| E::unknown_variant(value, CODES))
             }
         }
         // 索引只用于非人类可读枚举标识，不让 JSON 数字通过字符串入口。
@@ -193,15 +204,12 @@ impl<'de> serde::Deserialize<'de> for HexagramPosition {
                         CodeVisitor.visit_str(value).map(Identifier)
                     }
                     fn visit_u64<E: de::Error>(self, value: u64) -> Result<Identifier, E> {
-                        match value {
-                            0 => Ok(Identifier(HexagramPosition::First)),
-                            1 => Ok(Identifier(HexagramPosition::Second)),
-                            2 => Ok(Identifier(HexagramPosition::Third)),
-                            3 => Ok(Identifier(HexagramPosition::Fourth)),
-                            4 => Ok(Identifier(HexagramPosition::Fifth)),
-                            5 => Ok(Identifier(HexagramPosition::Sixth)),
-                            _ => Err(E::invalid_value(de::Unexpected::Unsigned(value), &self)),
-                        }
+                        usize::try_from(value)
+                            .ok()
+                            .and_then(|index| HexagramPosition::ALL.get(index))
+                            .copied()
+                            .map(Identifier)
+                            .ok_or_else(|| E::invalid_value(de::Unexpected::Unsigned(value), &self))
                     }
                 }
                 d.deserialize_identifier(IdentifierVisitor)

@@ -4,28 +4,28 @@
 //! 示例使用 `std` 打印结果；matharts-core 库本身仍为 `no_std`。
 
 use matharts_core::{
-    Branch, CyclicRing, Element, FiveCombination, InvalidGanzhi, Nayin, ParseError, Primitive,
-    SexagenaryCycle, SixBreak, SixClash, SixCombination, SixHarm, Stem, ThreeCombination,
-    ThreeMeeting, Xun,
+    Branch, CyclicSequence, Element, FiveCombination, Ganzhi, InvalidGanzhi, Nayin, ParseError,
+    SixBreak, SixClash, SixCombination, SixHarm, Stem, ThreeCombination, ThreeMeeting, Xun,
+    YinYang,
 };
 
 fn main() -> Result<(), ParseError> {
-    let ganzhi: SexagenaryCycle = "甲子".parse()?;
+    let ganzhi: Ganzhi = "甲子".parse()?;
     let stem = ganzhi.stem();
     let branch = ganzhi.branch();
     assert_eq!((stem, branch), (Stem::Jia, Branch::Zi));
     assert_eq!(
-        (stem.primitive(), stem.element()),
-        (Primitive::Yang, Element::Wood)
+        (stem.yin_yang(), stem.element()),
+        (YinYang::Yang, Element::Wood)
     );
     assert_eq!(
-        (branch.primitive(), branch.element()),
-        (Primitive::Yang, Element::Water)
+        (branch.yin_yang(), branch.element()),
+        (YinYang::Yang, Element::Water)
     );
     assert_eq!(ganzhi.to_string(), "甲子");
     println!("输入：{ganzhi}");
-    println!("天干：{stem}，{}{}", stem.primitive(), stem.element());
-    println!("地支：{branch}，{}{}", branch.primitive(), branch.element());
+    println!("天干：{stem}，{}{}", stem.yin_yang(), stem.element());
+    println!("地支：{branch}，{}{}", branch.yin_yang(), branch.element());
     let five = stem.five_combination();
     let six = branch.six_combination();
     assert_eq!(five, FiveCombination::JiaJi);
@@ -52,9 +52,9 @@ fn main() -> Result<(), ParseError> {
     show_branch_pairs(branch);
     show_branch_groups(branch);
 
-    // 循环步进通过公共 CyclicRing trait 提供，与历法日期无关。
+    // 循环步进通过公共 CyclicSequence trait 提供，与历法日期无关。
     let next = ganzhi.offset(1);
-    let last: SexagenaryCycle = "癸亥".parse()?;
+    let last: Ganzhi = "癸亥".parse()?;
     assert_eq!((next.stem(), next.branch()), (Stem::Yi, Branch::Chou));
     assert_eq!(last.offset(1), ganzhi);
     assert_eq!(ganzhi + 1, next);
@@ -89,9 +89,7 @@ fn main() -> Result<(), ParseError> {
         ("甲A", ParseError::InvalidBranch),
         ("甲丑", ParseError::InvalidGanzhi(InvalidGanzhi)),
     ] {
-        let error = input
-            .parse::<SexagenaryCycle>()
-            .expect_err("应拒绝非法输入");
+        let error = input.parse::<Ganzhi>().expect_err("应拒绝非法输入");
         assert_eq!(error, expected);
         let reason = match error {
             ParseError::InvalidGanzhiFormat => "必须恰好为两个中文干支字符",

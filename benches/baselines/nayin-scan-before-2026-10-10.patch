@@ -1,0 +1,43 @@
+diff --git a/src/nayin.rs b/src/nayin.rs
+--- a/src/nayin.rs
++++ b/src/nayin.rs
+@@ -309,34 +309,5 @@
+-        // 固定代码直接匹配，避免按名单位置逐个比较。
+-        match value {
+-            "HaiZhongJin" => Ok(Nayin::HaiZhongJin),
+-            "LuZhongHuo" => Ok(Nayin::LuZhongHuo),
+-            "DaLinMu" => Ok(Nayin::DaLinMu),
+-            "LuPangTu" => Ok(Nayin::LuPangTu),
+-            "JianFengJin" => Ok(Nayin::JianFengJin),
+-            "ShanTouHuo" => Ok(Nayin::ShanTouHuo),
+-            "JianXiaShui" => Ok(Nayin::JianXiaShui),
+-            "ChengTouTu" => Ok(Nayin::ChengTouTu),
+-            "BaiLaJin" => Ok(Nayin::BaiLaJin),
+-            "YangLiuMu" => Ok(Nayin::YangLiuMu),
+-            "QuanZhongShui" => Ok(Nayin::QuanZhongShui),
+-            "WuShangTu" => Ok(Nayin::WuShangTu),
+-            "PiLiHuo" => Ok(Nayin::PiLiHuo),
+-            "SongBaiMu" => Ok(Nayin::SongBaiMu),
+-            "ChangLiuShui" => Ok(Nayin::ChangLiuShui),
+-            "ShaZhongJin" => Ok(Nayin::ShaZhongJin),
+-            "ShanXiaHuo" => Ok(Nayin::ShanXiaHuo),
+-            "PingDiMu" => Ok(Nayin::PingDiMu),
+-            "BiShangTu" => Ok(Nayin::BiShangTu),
+-            "JinBoJin" => Ok(Nayin::JinBoJin),
+-            "FuDengHuo" => Ok(Nayin::FuDengHuo),
+-            "TianHeShui" => Ok(Nayin::TianHeShui),
+-            "DaYiTu" => Ok(Nayin::DaYiTu),
+-            "ChaiChuanJin" => Ok(Nayin::ChaiChuanJin),
+-            "SangZheMu" => Ok(Nayin::SangZheMu),
+-            "DaXiShui" => Ok(Nayin::DaXiShui),
+-            "ShaZhongTu" => Ok(Nayin::ShaZhongTu),
+-            "TianShangHuo" => Ok(Nayin::TianShangHuo),
+-            "ShiLiuMu" => Ok(Nayin::ShiLiuMu),
+-            "DaHaiShui" => Ok(Nayin::DaHaiShui),
+-            _ => Err(E::unknown_variant(value, NAYIN_CODES)),
+-        }
++        NAYIN_CODES
++            .iter()
++            .position(|code| *code == value)
++            .map(|index| Nayin::ALL[index])
++            .ok_or_else(|| E::unknown_variant(value, NAYIN_CODES))
