@@ -18,6 +18,7 @@ categories = ["data-structures", "no-std", "science"]
 include = [
     "/src/**", "/tests/**", "/examples/**",
     "/benches/*.rs", "/benches/support/**",
+    "/assets/readme/**",
     "/README.md", "/LICENSE", "/CONTEXT.md",
 ]
 

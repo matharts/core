@@ -96,7 +96,7 @@ impl CyclicSequence for GrowthPhase {
 
     #[inline]
     fn from_index(idx: u8) -> Self {
-        Self::ALL[(idx % Self::MODULUS.get()) as usize]
+        Self::ALL[(idx % Self::MODULUS) as usize]
     }
 
     #[inline]

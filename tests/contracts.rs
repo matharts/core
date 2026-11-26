@@ -37,7 +37,7 @@ fn check_cycle_boundary<T: CyclicSequence + TryFrom<u8>>() {
     for index in 0..=u8::MAX {
         assert_eq!(T::try_from(index).is_ok(), index < T::MODULUS.get());
         assert_eq!(T::try_from_index(index).is_ok(), index < T::MODULUS.get());
-        assert_eq!(T::from_index(index).index(), index % T::MODULUS.get());
+        assert_eq!(T::from_index(index).index(), index % T::MODULUS);
     }
 }
 
@@ -333,7 +333,7 @@ fn custom_cycle_uses_nonzero_period_and_strict_indices() {
     impl CyclicSequence for Weekday {
         const MODULUS: NonZeroU8 = NonZeroU8::new(7).unwrap();
         fn from_index(idx: u8) -> Self {
-            Self(idx % Self::MODULUS.get())
+            Self(idx % Self::MODULUS)
         }
         fn index(self) -> u8 {
             self.0

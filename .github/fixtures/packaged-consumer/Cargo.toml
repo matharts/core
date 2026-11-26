@@ -1,0 +1,12 @@
+[package]
+name = "packaged-consumer"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+matharts_core = { path = "../core" }
+serde_json = { version = "1.0", optional = true }
+
+[features]
+serde = ["matharts_core/serde", "dep:serde_json"]

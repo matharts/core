@@ -30,17 +30,19 @@ mise exec -- cargo run --example ganzhi --locked
 
 ### 接入应用
 
-应用的 Rust 最低版本为 **1.99**，以 [Cargo.toml](Cargo.toml) 的 `rust-version` 为准。将应用和已克隆的 `core` 仓库放在同一父目录，在应用的 `Cargo.toml` 中添加：
+接入应用使用 [Cargo.toml](Cargo.toml) 的 `rust-version` 或更新的 Rust。将应用和已克隆的 `core` 仓库放在同一父目录，在应用的 `Cargo.toml` 中添加：
 
 ```toml
 [dependencies]
 matharts_core = { path = "../core" }
 ```
 
+通过 Git 接入时，将 `path` 换成 `git = "https://github.com/matharts/core.git"`，并用 `rev` 指定应用采用的提交。
+
 将下面的完整示例保存为应用的 `src/main.rs`，在应用目录运行 `cargo run`：
 
 ```rust
-use matharts_core::{Branch, CyclicSequence, ParseError, Ganzhi};
+use matharts_core::{Branch, CyclicSequence, Ganzhi, ParseError};
 
 fn main() -> Result<(), ParseError> {
     let value: Ganzhi = "甲子".parse()?;
@@ -192,7 +194,7 @@ Serde 可读值的代码与字段保持原值；紧凑模型中的类型名改�
 
 ## 开发验证
 
-[rust-toolchain.toml](https://github.com/matharts/core/blob/main/rust-toolchain.toml) 固定 Rust `1.99.0`，与 [mise.toml](https://github.com/matharts/core/blob/main/mise.toml) 和 CI 保持一致。以下开发命令在克隆的 Core 仓库执行；发布包不包含开发流程配置。安装工具链、Git hooks，并执行本地检查：
+仓库开发使用 [rust-toolchain.toml](https://github.com/matharts/core/blob/main/rust-toolchain.toml) 固定的 Rust，[mise.toml](https://github.com/matharts/core/blob/main/mise.toml) 使用同一版本。以下命令在 Core 源码仓库运行：
 
 ```sh
 mise install
@@ -203,7 +205,7 @@ mise exec -- hk check --all --slow
 
 [hk.pkl](https://github.com/matharts/core/blob/main/hk.pkl) 配置格式、严格 Clippy 及 Serde 关闭／开启两组 debug 测试；不带 `--slow` 时只检查格式与 Clippy。提交前检查暂存的 Rust 改动，推送前运行测试，纯文档改动跳过。
 
-完整的 release 特性矩阵、裸机 `no_std` 构建、示例运行、严格文档检查和发布包验证见 [CI 工作流](https://github.com/matharts/core/blob/main/.github/workflows/ci.yml)，按改动选择检查的要求见 [AGENTS.md](https://github.com/matharts/core/blob/main/AGENTS.md)。
+[CI 工作流](https://github.com/matharts/core/blob/main/.github/workflows/ci.yml) 使用仓库固定的 Rust 运行格式与 Clippy 检查、debug／release 测试和示例、裸机 `no_std` 构建、严格 rustdoc 和打包。打包后，CI 解压 `.crate`，再用 `Cargo.toml` 声明的最低 Rust 版本运行[独立接入示例](https://github.com/matharts/core/tree/main/.github/fixtures/packaged-consumer)。示例分别验证默认模式和启用 `serde` 的 JSON 编解码。按改动选择检查的要求见 [AGENTS.md](https://github.com/matharts/core/blob/main/AGENTS.md)。
 
 生成并打开公共接口文档：
 
@@ -220,7 +222,7 @@ rtk proxy mise exec -- cargo bench --bench core_operations --features serde --lo
 
 运行结果为本机批次平均耗时。解码基准默认检查 19 类型、测量 171 项；核心操作独立测量 7 项。编译期单类型隔离、四处修改的实测结果及纳音连带差异核查见仓库中的 [2026-10-10 优化及隔离复测](https://github.com/matharts/core/blob/511f4c88fc18b6be2123fcd8a00e877f81b27b36/docs/reviews/2026-10-10-parallel-optimizations.md)。该记录对应链接所指提交的源码与本机测量环境；后续修改需重新取得相应验证证据。
 
-发布包保留源码、独立测试与样本、示例、现行基准源码、README、许可证和领域词表；性能原始记录、反向补丁与开发流程文件保留在仓库。检查包内容并实际编译打包后的 crate：
+发布包包含源码、独立测试与样本、示例、现行基准源码、README 及配图、许可证和领域词表。性能原始记录、反向补丁与开发流程文件保留在仓库。检查包内容并实际编译打包后的 crate：
 
 ```sh
 rtk proxy mise exec -- cargo package --list --locked

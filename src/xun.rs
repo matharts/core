@@ -149,7 +149,7 @@ impl CyclicSequence for Xun {
     const MODULUS: core::num::NonZeroU8 = core::num::NonZeroU8::new(6).unwrap();
 
     fn from_index(index: u8) -> Self {
-        Self::ALL[usize::from(index % Self::MODULUS.get())]
+        Self::ALL[usize::from(index % Self::MODULUS)]
     }
 
     fn index(self) -> u8 {

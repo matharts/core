@@ -9,36 +9,59 @@ permissions:
 jobs:
   contracts:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v7
-      - name: Install pinned compiler and bare-metal target
-        run: rustup toolchain install 1.99.0 --profile minimal --component rustfmt,clippy --target thumbv7m-none-eabi
+      - name: Install repository toolchain
+        run: rustup toolchain install --no-self-update
       - name: Format and lint
         run: |
-          cargo +1.99.0 fmt --check
-          cargo +1.99.0 clippy --all-targets --all-features --locked -- -D warnings
+          cargo fmt --all --check
+          rustfmt --edition 2024 --check .github/fixtures/packaged-consumer/src/main.rs
+          cargo clippy --all-targets --all-features --locked -- -D warnings
       - name: Debug and release feature matrix
         run: |
           for profile in dev release; do
-            cargo +1.99.0 test --profile "$profile" --locked
-            cargo +1.99.0 test --profile "$profile" --features serde --locked
+            cargo test --profile "$profile" --locked
+            cargo test --profile "$profile" --features serde --locked
           done
       - name: Run public example across debug and release features
-        shell: bash
         run: |
           for profile in dev release; do
-            cargo +1.99.0 run --example ganzhi --profile "$profile" --locked
-            cargo +1.99.0 run --example ganzhi --profile "$profile" --features serde --locked
+            cargo run --example ganzhi --profile "$profile" --locked
+            cargo run --example ganzhi --profile "$profile" --features serde --locked
           done
       - name: Bare-metal libraries (no std, with and without serde)
         run: |
-          cargo +1.99.0 build --lib --target thumbv7m-none-eabi --no-default-features --locked
-          cargo +1.99.0 build --lib --target thumbv7m-none-eabi --no-default-features --features serde --locked
+          cargo build --lib --target thumbv7m-none-eabi --no-default-features --locked
+          cargo build --lib --target thumbv7m-none-eabi --no-default-features --features serde --locked
       - name: Public documentation
         env:
           RUSTDOCFLAGS: -D warnings
-        run: cargo +1.99.0 doc --no-deps --all-features --locked
+        run: cargo doc --no-deps --all-features --locked
       - name: Package and verify distribution
         run: |
-          cargo +1.99.0 package --locked --offline
-          cargo +1.99.0 package --features serde --locked --offline
+          cargo package --locked --offline
+          cargo package --features serde --locked --offline
+      - name: Run packaged consumer on minimum Rust
+        run: |
+          metadata=$(cargo metadata --no-deps --format-version 1 --locked)
+          library=$(jq -ec '.packages[] | select(.name == "matharts_core")' <<< "$metadata")
+          minimum=$(jq -er '.rust_version // empty' <<< "$library")
+          if [[ "$minimum" =~ ^[0-9]+\.[0-9]+$ ]]; then
+            minimum+=.0
+          fi
+          rustup toolchain install "$minimum" --profile minimal --no-self-update
+
+          version=$(jq -er '.version' <<< "$library")
+          target_dir=$(jq -er '.target_directory' <<< "$metadata")
+          work_dir=$(mktemp -d)
+          trap 'rm -rf "$work_dir"' EXIT
+          mkdir "$work_dir/core"
+          tar -xzf "$target_dir/package/matharts_core-$version.crate" --strip-components=1 -C "$work_dir/core"
+          cp -R .github/fixtures/packaged-consumer "$work_dir/consumer"
+          cd "$work_dir/consumer"
+          cargo "+$minimum" run --offline
+          cargo "+$minimum" run --offline --features serde
